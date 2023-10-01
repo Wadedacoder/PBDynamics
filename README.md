@@ -1,6 +1,6 @@
 ## OpenGL Template
 
-OpenGL Template with GLEW and imgui initiliation built in. Also has classes for shaders.
+OpenGL Template with GLEW and imgui initialization built in. Also has classes for shaders.
 
 TODO:
 OBJ loader
