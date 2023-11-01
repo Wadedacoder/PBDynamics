@@ -1,7 +1,9 @@
-## OpenGL Template
+## PBDynamics
 
-OpenGL Template with GLEW and imgui initialization built in. Also has classes for shaders.
+PBDynamics is a simple physics engine based on Position Based Dynamics. It is written in C++ and uses OpenGL for rendering.
 
-TODO:
-OBJ loader
-Camera (FPS, FreeRoam and DOLLY)
+### To build the project:
+```
+mkdir build -c
+sudo bash ./build.sh
+``` 

@@ -1,6 +1,8 @@
 #include "init.hpp"
 #include "shader.hpp"
 
+const glm::vec3 clearColor = glm::vec3(0.541f, 0.898f, 1.0f);
+
 int main(){
     // Make a quick test to see if init.hpp and init.cpp are working
     int height = 600;
@@ -15,17 +17,11 @@ int main(){
     glViewport(0, 0, display_w, display_h);
 
 
-    // Define a rectangle
+    // Define a triangle
     std::vector<float> vertices = {
-        // rectangle bottom left triangle
-        -1.f, -1.f, 0.0f, // bottom left
-        -1.f, 1.f, 0.0f, // top left
-        1.f, -1.f, 0.0f, // bottom right
-
-        // rectangle top right triangle
-        1.f, -1.f, 0.0f, // bottom right
-        -1.f, 1.f, 0.0f, // top left
-        1.f, 1.f, 0.0f // top right
+        -0.5f, -0.5f, 0.0f, // left
+         0.5f, -0.5f, 0.0f, // right
+         0.0f,  0.5f, 0.0f  // top
     };
 
     // Generate VAO and VBO for the triangle
@@ -52,7 +48,7 @@ int main(){
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f );
+        glClearColor(clearColor.x, clearColor.y, clearColor.z, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         // listen for a ctrl event
         if (io.KeyCtrl){
