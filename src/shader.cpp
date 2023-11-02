@@ -63,15 +63,60 @@ void Shader::use()
 
 void Shader::setBool(const std::string& name, bool value) const
 {
-    glUniform1i(glGetUniformLocation(ID, name.c_str()), (int)value);
+    GLint location = glGetUniformLocation(ID, name.c_str());
+    if(location == -1){
+        std::cout << "ERROR::SHADER::SETBOOL "<< name <<" ::UNIFORM_NOT_FOUND\n";
+        return;
+    }
+    glUniform1i(location, (int)value);
 }
 void Shader::setInt(const std::string& name, int value) const
 {
-    glUniform1i(glGetUniformLocation(ID, name.c_str()), value);
+    GLint location = glGetUniformLocation(ID, name.c_str());
+    if(location == -1){
+        std::cout << "ERROR::SHADER::SETINT "<< name <<" ::UNIFORM_NOT_FOUND\n";
+        return;
+    }
+    glUniform1i(location, value);
 }
 void Shader::setFloat(const std::string& name, float value) const
 {
-    glUniform1f(glGetUniformLocation(ID, name.c_str()), value);
+    GLint location = glGetUniformLocation(ID, name.c_str());
+    if(location == -1){
+        std::cout << "ERROR::SHADER::SETVEC3 "<< name <<" ::UNIFORM_NOT_FOUND\n";
+        return;
+    }
+    glUniform1f(location, value);
+}
+
+void Shader::setMat4(const std::string& name, glm::mat4 value) const
+{
+    GLint location = glGetUniformLocation(ID, name.c_str());
+    if(location == -1){
+        std::cout << "ERROR::SHADER::SETMAT4 "<< name <<" ::UNIFORM_NOT_FOUND\n";
+        return;
+    }
+    glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(value));
+}
+
+void Shader::setVec3(const std::string& name, glm::vec3 value) const
+{
+    GLint location = glGetUniformLocation(ID, name.c_str());
+    if(location == -1){
+        std::cout << "ERROR::SHADER::SETVEC3 "<< name <<" ::UNIFORM_NOT_FOUND\n";
+        return;
+    }
+    glUniform3fv(glGetUniformLocation(ID, name.c_str()), 1, glm::value_ptr(value));
+}
+
+void Shader::setVec4(const std::string& name, glm::vec4 value) const
+{
+    GLint location = glGetUniformLocation(ID, name.c_str());
+    if(location == -1){
+        std::cout << "ERROR::SHADER::SETVEC4 "<< name <<" ::UNIFORM_NOT_FOUND\n";
+        return;
+    }
+    glUniform4fv(glGetUniformLocation(ID, name.c_str()), 1, glm::value_ptr(value));
 }
 
 void Shader::checkCompileErrors(unsigned int shader, std::string type) {

@@ -68,7 +68,7 @@ void init::cleanup(GLFWwindow* window){
 std::string init::setGLSLVersion(int major, int minor){
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor);
-    std::string glsl_version = "#version " + std::to_string(major) + std::to_string(minor);
+    std::string glsl_version = "#version " + std::to_string(major) + std::to_string(minor) + "0 core";
     if(major >= 3){
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
         if(minor >= 2 || major > 3)glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // 3.0+ only
@@ -83,7 +83,7 @@ GLFWwindow* init::setupWindow(int height , int width){
         exit(0);
     }
     std::string glsl_version = setGLSLVersion(3, 3);
-    GLFWwindow* window = glfwCreateWindow(width, height, "Ray Tracer", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(width, height, "PBDynamics", NULL, NULL);
     if (window == NULL){
         fprintf(stderr, "Failed to create GLFW window\n");
         exit(0);

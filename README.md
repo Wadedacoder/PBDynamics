@@ -7,3 +7,6 @@ PBDynamics is a simple physics engine based on Position Based Dynamics. It is wr
 mkdir build -c
 sudo bash ./build.sh
 ``` 
+
+### TODO:
+- [x] Fix orthographic projection
