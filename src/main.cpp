@@ -48,27 +48,49 @@ std::vector<float> cu_vertices = {
 };
 
 std::vector<glm::vec3> velocity_vector = {
-    glm::vec3(0.0f, 1.2f, 0.0f), // 0
-    glm::vec3(0.0f, 1.2f, 0.0f), // 1
-    glm::vec3(0.0f, 1.2f, 0.0f), // 2
-    glm::vec3(0.0f, 1.2f, 0.0f), // 3
-    glm::vec3(0.0f, 1.2f, 0.0f), // 4
-    glm::vec3(0.0f, 1.2f, 0.0f), // 5
-    glm::vec3(0.0f, 1.2f, 0.0f), // 6
-    glm::vec3(0.0f, 1.2f, 0.0f), // 7
+    glm::vec3(0.0f, .2f, 0.0f), // 0
+    glm::vec3(0.0f, .2f, 0.0f), // 1
+    glm::vec3(0.0f, .2f, 0.0f), // 2
+    glm::vec3(0.0f, .2f, 0.0f), // 3
+    glm::vec3(0.0f, .2f, 0.0f), // 4
+    glm::vec3(0.0f, .2f, 0.0f), // 5
+    glm::vec3(0.0f, .2f, 0.0f), // 6
+    glm::vec3(0.0f, .2f, 0.0f), // 7
 };
+
+std::vector<float> inverse_masses = {
+    1.0f, // 0
+    1.0f, // 1
+    5.0f, // 2
+    5.0f, // 3
+    1.0f, // 4
+    1.0f, // 5
+    1.0f, // 6
+    1.0f, // 7
+};
+
+void solveStretchingConstraint(int ind1, int ind2, float length, float k);
+
 
 int main(){
 
-    // Increase the y velocity of the cub
+    // Rotate the cube by 45 degrees
+    glm::mat4 rotation = glm::mat4(1.0f);
+    rotation = glm::rotate(rotation, glm::radians(150.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    // Apply the rotation to the vertices
+    for (int i = 0; i < 8; i++){
+        glm::vec4 temp = glm::vec4(cu_vertices[i * 3], cu_vertices[i * 3 + 1], cu_vertices[i * 3 + 2], 1.0f);
+        temp = rotation * temp;
+        cu_vertices[i * 3] = temp.x;
+        cu_vertices[i * 3 + 1] = temp.y;
+        cu_vertices[i * 3 + 2] = temp.z;
+    }
 
     // Compute the geometric to physical matrix
     // Let Bottom Left corner of the screen be (0, 0) and Top Right corner be (1, 1)
     geometricToPhysical = glm::mat4(1.0f);
     geometricToPhysical = glm::translate(geometricToPhysical, glm::vec3(1.0f, 1.0f, 1.0f));
     geometricToPhysical = glm::scale(geometricToPhysical, glm::vec3(.5f, .5f, .5f));
-
-
 
 
     GLFWwindow* window = init::setupWindow(height, width);
@@ -176,10 +198,12 @@ int main(){
     float deltaTime = 0.0f;
 
     // Add a shader
-    Shader program("./shaders/shader.vs", "./shaders/shader.frag");
+    Shader program("./shaders/shader.vert", "./shaders/shader.frag");
   
+    glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
     //Enable depth testing
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_MULTISAMPLE);  
     int scale = 1;
     
     // Main loop
@@ -236,13 +260,13 @@ int main(){
         program.setMat4("view", camera.getViewMatrix());
         program.setMat4("projection", camera.getProjectionMatrix(height, width));
         program.setVec4("color", glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
-        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_LINE_LOOP, indices.size(), GL_UNSIGNED_INT, 0);
 
         //Make a ground plane with cube
         glBindVertexArray(g_VAO);
         model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(0.0f, -1.f, 0.0f));
-        model = glm::scale(model, glm::vec3(10.0f, .1f, 10.f));
+        model = glm::scale(model, glm::vec3(10.0f, .01f, 10.f));
         program.setMat4("model", model);
         program.setVec4("color", glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
         glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
@@ -297,27 +321,102 @@ void update(float deltaTime){
 
     // Update the velocity of the cube
     // std::cout << "Updating velocity" << std::endl;
-    for (int i = 0; i < 8; i++){
-        velocity_vector[i].y -= gravity * deltaTime;
-    }
-
-    // Update the position of the cube
-    // std::cout << "Updating position" << std::endl;
-    for (int i = 0; i < 8; i++){
-        cu_vertices[i * 3 + 1] += velocity_vector[i].y * deltaTime;
-    }
-
-    // Check for collision
-    // std::cout << "Checking for collision" << std::endl;
-    for (int i = 0; i < 8; i++){
-        if (cu_vertices[i * 3 + 1] < -1.0f){
-            cu_vertices[i * 3 + 1] = -1.0f;
-            velocity_vector[i].y = 0.0f;
+    float a = deltaTime;
+    int n_iter = 20;
+    float k_f = 1.f;
+    float k = 1 - pow(1 - k_f, 1.0f / n_iter);
+            float diagonal = sqrt(2.0f);
+    for(int i = 0; i < n_iter; i++){
+        float deltaTime = a / n_iter;
+        std::vector<float> cu_vertices_physical; // deep copy
+        for(float i : cu_vertices){
+            cu_vertices_physical.push_back(i);
         }
+        for (int i = 0; i < 8; i++){
+            velocity_vector[i].y -= gravity * deltaTime;
+        }
+
+        // Update the position of the cube
+        // std::cout << "Updating position" << std::endl;
+        for (int i = 0; i < 8; i++){
+            cu_vertices[i * 3 + 1] += velocity_vector[i].y * deltaTime;
+        }
+
+        // Check for collision
+        // std::cout << "Checking for collision" << std::endl;
+        for (int i = 0; i < 8; i++){
+            if (cu_vertices[i * 3 + 1] < -1.0f){
+                std::cout << "Collision detected with vertice " << i << std::endl;
+                cu_vertices[i * 3 + 1] = cu_vertices_physical[i * 3 + 1];
+                // velocity_vector[i].y = 0.2f;
+            }
+        }
+            // Add diagonal constraints 
+
+        // Solve the stretching constraint between each triangle
+        // std::cout << "Solving stretching constraint" << std::endl;
+        // Solve the stretching constraint between each triangle
+        // Front
+            solveStretchingConstraint(0, 1, 1.0f, k);
+            solveStretchingConstraint(1, 2, 1.0f, k);
+            solveStretchingConstraint(2, 3, 1.0f, k);
+            solveStretchingConstraint(3, 0, 1.0f, k);
+            // Back
+            solveStretchingConstraint(4, 5, 1.0f, k);
+            solveStretchingConstraint(5, 6, 1.0f, k);
+            solveStretchingConstraint(6, 7, 1.0f, k);
+            solveStretchingConstraint(7, 4, 1.0f, k);
+            // Left
+            solveStretchingConstraint(4, 0, 1.0f, k);
+            solveStretchingConstraint(7, 3, 1.0f, k);
+            // Right
+            solveStretchingConstraint(5, 1, 1.0f, k);
+            solveStretchingConstraint(6, 2, 1.0f, k);
+
+
+            // Front
+            solveStretchingConstraint(0, 2, diagonal, k);
+            // Back
+            solveStretchingConstraint(1, 6, diagonal, k);
+            // Left
+            solveStretchingConstraint(4, 3, diagonal, k);
+            // Right
+            solveStretchingConstraint(5, 7, diagonal, k);
+            // Top
+            solveStretchingConstraint(2, 7, diagonal, k);
+            // Bottom
+            solveStretchingConstraint(0, 5, diagonal, k);
+    
+    // Compute velocity
+    // std::cout << "Computing velocity" << std::endl;
+        for (int i = 0; i < 8; i++){
+            velocity_vector[i].x = (cu_vertices[i * 3] - cu_vertices_physical[i * 3]) / deltaTime;
+            velocity_vector[i].y = (cu_vertices[i * 3 + 1] - cu_vertices_physical[i * 3 + 1]) / deltaTime;
+            velocity_vector[i].z = (cu_vertices[i * 3 + 2] - cu_vertices_physical[i * 3 + 2]) / deltaTime;
+        }
+            for(int i = 0; i < 8; i++){
+        std::cout << "Position of vertice " << i << ": (" << cu_vertices[i * 3] << ", " << cu_vertices[i * 3 + 1] << ", " << cu_vertices[i * 3 + 2] << ")\n";
+    }
     }
 
-    // Check Constraints
-    // std::cout << "Checking constraints" << std::endl;
+}
 
-    
+
+void solveStretchingConstraint(int ind1, int ind2, float length, float k){
+    glm::vec3 p0 = glm::vec3(cu_vertices[ind1 * 3], cu_vertices[ind1 * 3 + 1], cu_vertices[ind1 * 3 + 2]);
+    glm::vec3 p1 = glm::vec3(cu_vertices[ind2 * 3], cu_vertices[ind2 * 3 + 1], cu_vertices[ind2 * 3 + 2]);
+    float d = length;
+    // The constraint is |p0 - p1| = d
+    // We want to find the delta p0 and delta p1 that satisfies the constraint
+    float len = glm::length(p0 - p1);
+    float w0 = inverse_masses[ind1] / (inverse_masses[ind1] + inverse_masses[ind2]);
+    float w1 = inverse_masses[ind2] / (inverse_masses[ind1] + inverse_masses[ind2]);
+    glm::vec3 delta_p0 = -w0 * k *(len - d) * (p0 - p1) / len;
+    glm::vec3 delta_p1 = w1 * k * (len - d) * (p0 - p1) / len;
+    cu_vertices[ind1 * 3] += delta_p0.x;
+    cu_vertices[ind1 * 3 + 1] += delta_p0.y;
+    cu_vertices[ind1 * 3 + 2] += delta_p0.z;
+    cu_vertices[ind2 * 3] += delta_p1.x;
+    cu_vertices[ind2 * 3 + 1] += delta_p1.y;
+    cu_vertices[ind2 * 3 + 2] += delta_p1.z;
 }
