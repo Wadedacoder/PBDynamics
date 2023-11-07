@@ -1,6 +1,8 @@
 #include "init.hpp"
 #include "shader.hpp"
 #include "camera.hpp"
+#include "engine.hpp"
+#include "particle.hpp"
 
 const glm::vec3 clearColor = glm::vec3(0.541f, 0.898f, 1.0f);
 
@@ -33,12 +35,12 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 // Update function for physics
 void update(float deltaTime);
 
-struct Particle{
-    glm::vec3 position;
-    glm::vec3 old_position;
-    glm::vec3 velocity;
-    float inverse_mass;
-};
+// struct Particle{
+//     glm::vec3 position;
+//     glm::vec3 old_position;
+//     glm::vec3 velocity;
+//     float inverse_mass;
+// };
 
 
 void particlestoFloats(std::vector<Particle>& particles, std::vector<float>& vertices){
@@ -90,7 +92,7 @@ std::vector<float> inverse_masses = {
 };
 
 
-void solveStretchingConstraint(int ind1, int ind2, float length, float k);
+// void solveStretchingConstraint(int ind1, int ind2, float length, float k);
 
 
 int main(){
@@ -390,44 +392,44 @@ void update(float deltaTime){
 // std::cout << "Solving stretching constraint" << std::endl;
 // Solve the stretching constraint between each adjacent particle
     // 0
-    solveStretchingConstraint(0, 1, 1.0f, k);
-    solveStretchingConstraint(0, 3, 1.0f, k);
-    solveStretchingConstraint(0, 4, 1.0f, k);
-    // 1
-    solveStretchingConstraint(1, 2, 1.0f, k);
-    solveStretchingConstraint(1, 5, 1.0f, k);
-    // 2
-    solveStretchingConstraint(2, 3, 1.0f, k);
-    solveStretchingConstraint(2, 6, 1.0f, k);
-    // 3
-    solveStretchingConstraint(3, 7, 1.0f, k);
-    // 4
-    solveStretchingConstraint(4, 5, 1.0f, k);
-    solveStretchingConstraint(4, 7, 1.0f, k);
-    // 5
-    solveStretchingConstraint(5, 6, 1.0f, k);
-    // 6
-    solveStretchingConstraint(6, 7, 1.0f, k);
+    // solveStretchingConstraint(0, 1, 1.0f, k);
+    // solveStretchingConstraint(0, 3, 1.0f, k);
+    // solveStretchingConstraint(0, 4, 1.0f, k);
+    // // 1
+    // solveStretchingConstraint(1, 2, 1.0f, k);
+    // solveStretchingConstraint(1, 5, 1.0f, k);
+    // // 2
+    // solveStretchingConstraint(2, 3, 1.0f, k);
+    // solveStretchingConstraint(2, 6, 1.0f, k);
+    // // 3
+    // solveStretchingConstraint(3, 7, 1.0f, k);
+    // // 4
+    // solveStretchingConstraint(4, 5, 1.0f, k);
+    // solveStretchingConstraint(4, 7, 1.0f, k);
+    // // 5
+    // solveStretchingConstraint(5, 6, 1.0f, k);
+    // // 6
+    // solveStretchingConstraint(6, 7, 1.0f, k);
 
-    // // Do the same for the opposite
-    // // 0
-    solveStretchingConstraint(0, 5, opposite, k2);
-    solveStretchingConstraint(0, 2, opposite, k2);
-    solveStretchingConstraint(0, 7, opposite, k2);
-    // 1
-    solveStretchingConstraint(1, 4, opposite, k2);
-    solveStretchingConstraint(1, 3, opposite, k2);
-    solveStretchingConstraint(1, 6, opposite, k2);
-    // 2
-    solveStretchingConstraint(2, 5, opposite, k2);
-    solveStretchingConstraint(2, 7, opposite, k2);
-    // 3
-    solveStretchingConstraint(3, 4, opposite, k2);
-    solveStretchingConstraint(3, 6, opposite, k2);
-    // 4
-    solveStretchingConstraint(4, 6, opposite, k2);
-    // 5
-    solveStretchingConstraint(5, 7, opposite, k2);
+    // // // Do the same for the opposite
+    // // // 0
+    // solveStretchingConstraint(0, 5, opposite, k2);
+    // solveStretchingConstraint(0, 2, opposite, k2);
+    // solveStretchingConstraint(0, 7, opposite, k2);
+    // // 1
+    // solveStretchingConstraint(1, 4, opposite, k2);
+    // solveStretchingConstraint(1, 3, opposite, k2);
+    // solveStretchingConstraint(1, 6, opposite, k2);
+    // // 2
+    // solveStretchingConstraint(2, 5, opposite, k2);
+    // solveStretchingConstraint(2, 7, opposite, k2);
+    // // 3
+    // solveStretchingConstraint(3, 4, opposite, k2);
+    // solveStretchingConstraint(3, 6, opposite, k2);
+    // // 4
+    // solveStretchingConstraint(4, 6, opposite, k2);
+    // // 5
+    // solveStretchingConstraint(5, 7, opposite, k2);
 
 
     // // Do the same for the diagonal
@@ -439,6 +441,46 @@ void update(float deltaTime){
     // solveStretchingConstraint(2, 4, diagonal, k);
     // // 3
     // solveStretchingConstraint(3, 5, diagonal, k);
+    
+    Engine::solveStretchingConstraint(particles[0], particles[1], 1.0f, k);
+    Engine::solveStretchingConstraint(particles[0], particles[3], 1.0f, k);
+    Engine::solveStretchingConstraint(particles[0], particles[4], 1.0f, k);
+    // 1
+    Engine::solveStretchingConstraint(particles[1], particles[2], 1.0f, k);
+    Engine::solveStretchingConstraint(particles[1], particles[5], 1.0f, k);
+    // 2
+    Engine::solveStretchingConstraint(particles[2], particles[3], 1.0f, k);
+    Engine::solveStretchingConstraint(particles[2], particles[6], 1.0f, k);
+    // 3
+    Engine::solveStretchingConstraint(particles[3], particles[7], 1.0f, k);
+    // 4
+    Engine::solveStretchingConstraint(particles[4], particles[5], 1.0f, k);
+    Engine::solveStretchingConstraint(particles[4], particles[7], 1.0f, k);
+    // 5
+    Engine::solveStretchingConstraint(particles[5], particles[6], 1.0f, k);
+    // 6
+    Engine::solveStretchingConstraint(particles[6], particles[7], 1.0f, k);
+
+    // // Do the same for the opposite
+    // // 0
+    Engine::solveStretchingConstraint(particles[0], particles[5], opposite, k2);
+    Engine::solveStretchingConstraint(particles[0], particles[2], opposite, k2);
+    Engine::solveStretchingConstraint(particles[0], particles[7], opposite, k2);
+    // 1
+    Engine::solveStretchingConstraint(particles[1], particles[4], opposite, k2);
+    Engine::solveStretchingConstraint(particles[1], particles[3], opposite, k2);
+    Engine::solveStretchingConstraint(particles[1], particles[6], opposite, k2);
+    // 2
+    Engine::solveStretchingConstraint(particles[2], particles[5], opposite, k2);
+    Engine::solveStretchingConstraint(particles[2], particles[7], opposite, k2);
+    // 3
+    Engine::solveStretchingConstraint(particles[3], particles[4], opposite, k2);
+    Engine::solveStretchingConstraint(particles[3], particles[6], opposite, k2);
+    // 4
+    Engine::solveStretchingConstraint(particles[4], particles[6], opposite, k2);
+    // 5
+    Engine::solveStretchingConstraint(particles[5], particles[7], opposite, k2);
+
 
 
     // Compute velocity
@@ -449,17 +491,17 @@ void update(float deltaTime){
 }
 
 
-void solveStretchingConstraint(int ind1, int ind2, float length, float k){
-    Particle p0 = particles[ind1];
-    Particle p1 = particles[ind2];
-    float d = length;
-    // The constraint is |p0 - p1| = d
-    // We want to find the delta p0 and delta p1 that satisfies the constraint
-    float len = glm::length(p0.position - p1.position);
-    float w0 = p0.inverse_mass / (p0.inverse_mass + p1.inverse_mass);
-    float w1 = p1.inverse_mass / (p0.inverse_mass + p1.inverse_mass);
-    glm::vec3 delta_p0 = -(w0 * k *(len - d)  / len ) * (p0.position - p1.position);
-    glm::vec3 delta_p1 = (w1 * k *(len - d)  / len ) * (p0.position - p1.position);
-    particles[ind1].position += delta_p0;
-    particles[ind2].position += delta_p1;
-}
+// void solveStretchingConstraint(int ind1, int ind2, float length, float k){
+//     Particle p0 = particles[ind1];
+//     Particle p1 = particles[ind2];
+//     float d = length;
+//     // The constraint is |p0 - p1| = d
+//     // We want to find the delta p0 and delta p1 that satisfies the constraint
+//     float len = glm::length(p0.position - p1.position);
+//     float w0 = p0.inverse_mass / (p0.inverse_mass + p1.inverse_mass);
+//     float w1 = p1.inverse_mass / (p0.inverse_mass + p1.inverse_mass);
+//     glm::vec3 delta_p0 = -(w0 * k *(len - d)  / len ) * (p0.position - p1.position);
+//     glm::vec3 delta_p1 = (w1 * k *(len - d)  / len ) * (p0.position - p1.position);
+//     particles[ind1].position += delta_p0;
+//     particles[ind2].position += delta_p1;
+// }
