@@ -23,7 +23,7 @@ double lastY = height / 2.0f;
 bool firstMouse = true;
 
 // Physics parameters
-float gravity = .098f;
+float gravity = -.098f;
 glm::mat4 geometricToPhysical{glm::mat4(1.0f)};
 
 // Callback functions
@@ -32,6 +32,26 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 
 // Update function for physics
 void update(float deltaTime);
+
+struct Particle{
+    glm::vec3 position;
+    glm::vec3 old_position;
+    glm::vec3 velocity;
+    float inverse_mass;
+};
+
+
+void particlestoFloats(std::vector<Particle>& particles, std::vector<float>& vertices){
+    vertices.clear();
+    for (int i = 0; i < particles.size(); i++){
+        vertices.push_back(particles[i].position.x);
+        vertices.push_back(particles[i].position.y);
+        vertices.push_back(particles[i].position.z);
+    }
+}
+
+
+std::vector<Particle> particles;
 
 // Define a Cube with 8 vertices
 std::vector<float> cu_vertices = {
@@ -61,13 +81,14 @@ std::vector<glm::vec3> velocity_vector = {
 std::vector<float> inverse_masses = {
     1.0f, // 0
     1.0f, // 1
-    5.0f, // 2
-    5.0f, // 3
+    1.0f, // 2
+    1.0f, // 3
     1.0f, // 4
     1.0f, // 5
     1.0f, // 6
     1.0f, // 7
 };
+
 
 void solveStretchingConstraint(int ind1, int ind2, float length, float k);
 
@@ -76,6 +97,7 @@ int main(){
 
     // Rotate the cube by 45 degrees
     glm::mat4 rotation = glm::mat4(1.0f);
+    rotation = glm::translate(rotation, glm::vec3(0.0f, 1.f, 0.f));
     rotation = glm::rotate(rotation, glm::radians(150.0f), glm::vec3(1.0f, 0.0f, 0.0f));
     // Apply the rotation to the vertices
     for (int i = 0; i < 8; i++){
@@ -85,6 +107,19 @@ int main(){
         cu_vertices[i * 3 + 1] = temp.y;
         cu_vertices[i * 3 + 2] = temp.z;
     }
+
+
+    // Convert the vertice, velocity, and inverse_mass vectors to a particle vector
+    for (int i = 0; i < 8; i++){
+        Particle p;
+        p.position = glm::vec3(cu_vertices[i * 3], cu_vertices[i * 3 + 1], cu_vertices[i * 3 + 2]);
+        p.old_position = p.position;
+        p.velocity = velocity_vector[i];
+        p.inverse_mass = inverse_masses[i];
+        particles.push_back(p);
+    }
+
+
 
     // Compute the geometric to physical matrix
     // Let Bottom Left corner of the screen be (0, 0) and Top Right corner be (1, 1)
@@ -128,19 +163,19 @@ int main(){
     std::vector<unsigned int> indices = {
         // front
         0, 1, 2,
-        2, 3, 0,
+        0, 2, 3,
         // right
         1, 5, 6,
-        6, 2, 1,
+        1, 6, 2,
         // back
         7, 6, 5,
-        5, 4, 7,
+        7, 5, 4,
         // left
         4, 0, 3,
-        3, 7, 4,
+        4, 3, 7,
         // bottom
         4, 5, 1,
-        1, 0, 4,
+        4, 1, 0,
         // top
         3, 2, 6,
         6, 7, 3
@@ -221,6 +256,12 @@ int main(){
 
         // Update physics
         update(deltaTime);
+        // Print the positions of the particles
+        for (int i = 0; i < 8; i++){
+            std::cout << "Particle " << i << " position: " << particles[i].position.x << ", " << particles[i].position.y << ", " << particles[i].position.z << std::endl;
+        }
+
+        particlestoFloats(particles, cu_vertices); // Convert the particles to floats
 
         // Update the vertices for the cube
         glBindVertexArray(VAO);
@@ -321,102 +362,104 @@ void update(float deltaTime){
 
     // Update the velocity of the cube
     // std::cout << "Updating velocity" << std::endl;
-    float a = deltaTime;
-    int n_iter = 20;
-    float k_f = 1.f;
-    float k = 1 - pow(1 - k_f, 1.0f / n_iter);
-            float diagonal = sqrt(2.0f);
-    for(int i = 0; i < n_iter; i++){
-        float deltaTime = a / n_iter;
-        std::vector<float> cu_vertices_physical; // deep copy
-        for(float i : cu_vertices){
-            cu_vertices_physical.push_back(i);
+    float k = .1f;
+    float k2 = .001f;
+    float opposite = sqrt(2.0f);
+    float diagonal = sqrt(3.0f);
+    for (int i = 0; i < 8; i++){
+        if(particles[i].inverse_mass == 0.f) continue;
+        particles[i].velocity += glm::vec3(0.0f, gravity, 0.0f) * deltaTime * inverse_masses[i];
+    }
+    
+    // Update the position of the cube
+    // std::cout << "Updating position" << std::endl;
+    for (int i = 0; i < 8; i++){
+        particles[i].old_position = particles[i].position;
+        particles[i].position += particles[i].velocity * deltaTime;
+    }
+    
+    //Check for ground collision
+    for (int i = 0; i < 8; i++){
+        if(particles[i].position.y <= -1.0f){
+            particles[i].position.y = -1.0f;
         }
-        for (int i = 0; i < 8; i++){
-            velocity_vector[i].y -= gravity * deltaTime;
-        }
-
-        // Update the position of the cube
-        // std::cout << "Updating position" << std::endl;
-        for (int i = 0; i < 8; i++){
-            cu_vertices[i * 3 + 1] += velocity_vector[i].y * deltaTime;
-        }
-
-        // Check for collision
-        // std::cout << "Checking for collision" << std::endl;
-        for (int i = 0; i < 8; i++){
-            if (cu_vertices[i * 3 + 1] < -1.0f){
-                std::cout << "Collision detected with vertice " << i << std::endl;
-                cu_vertices[i * 3 + 1] = cu_vertices_physical[i * 3 + 1];
-                // velocity_vector[i].y = 0.2f;
-            }
-        }
+    }
             // Add diagonal constraints 
 
-        // Solve the stretching constraint between each triangle
-        // std::cout << "Solving stretching constraint" << std::endl;
-        // Solve the stretching constraint between each triangle
-        // Front
-            solveStretchingConstraint(0, 1, 1.0f, k);
-            solveStretchingConstraint(1, 2, 1.0f, k);
-            solveStretchingConstraint(2, 3, 1.0f, k);
-            solveStretchingConstraint(3, 0, 1.0f, k);
-            // Back
-            solveStretchingConstraint(4, 5, 1.0f, k);
-            solveStretchingConstraint(5, 6, 1.0f, k);
-            solveStretchingConstraint(6, 7, 1.0f, k);
-            solveStretchingConstraint(7, 4, 1.0f, k);
-            // Left
-            solveStretchingConstraint(4, 0, 1.0f, k);
-            solveStretchingConstraint(7, 3, 1.0f, k);
-            // Right
-            solveStretchingConstraint(5, 1, 1.0f, k);
-            solveStretchingConstraint(6, 2, 1.0f, k);
+// Solve the stretching constraint between each triangle
+// std::cout << "Solving stretching constraint" << std::endl;
+// Solve the stretching constraint between each adjacent particle
+    // 0
+    solveStretchingConstraint(0, 1, 1.0f, k);
+    solveStretchingConstraint(0, 3, 1.0f, k);
+    solveStretchingConstraint(0, 4, 1.0f, k);
+    // 1
+    solveStretchingConstraint(1, 2, 1.0f, k);
+    solveStretchingConstraint(1, 5, 1.0f, k);
+    // 2
+    solveStretchingConstraint(2, 3, 1.0f, k);
+    solveStretchingConstraint(2, 6, 1.0f, k);
+    // 3
+    solveStretchingConstraint(3, 7, 1.0f, k);
+    // 4
+    solveStretchingConstraint(4, 5, 1.0f, k);
+    solveStretchingConstraint(4, 7, 1.0f, k);
+    // 5
+    solveStretchingConstraint(5, 6, 1.0f, k);
+    // 6
+    solveStretchingConstraint(6, 7, 1.0f, k);
+
+    // // Do the same for the opposite
+    // // 0
+    solveStretchingConstraint(0, 5, opposite, k2);
+    solveStretchingConstraint(0, 2, opposite, k2);
+    solveStretchingConstraint(0, 7, opposite, k2);
+    // 1
+    solveStretchingConstraint(1, 4, opposite, k2);
+    solveStretchingConstraint(1, 3, opposite, k2);
+    solveStretchingConstraint(1, 6, opposite, k2);
+    // 2
+    solveStretchingConstraint(2, 5, opposite, k2);
+    solveStretchingConstraint(2, 7, opposite, k2);
+    // 3
+    solveStretchingConstraint(3, 4, opposite, k2);
+    solveStretchingConstraint(3, 6, opposite, k2);
+    // 4
+    solveStretchingConstraint(4, 6, opposite, k2);
+    // 5
+    solveStretchingConstraint(5, 7, opposite, k2);
 
 
-            // Front
-            solveStretchingConstraint(0, 2, diagonal, k);
-            // Back
-            solveStretchingConstraint(1, 6, diagonal, k);
-            // Left
-            solveStretchingConstraint(4, 3, diagonal, k);
-            // Right
-            solveStretchingConstraint(5, 7, diagonal, k);
-            // Top
-            solveStretchingConstraint(2, 7, diagonal, k);
-            // Bottom
-            solveStretchingConstraint(0, 5, diagonal, k);
-    
+    // // Do the same for the diagonal
+    // // 0
+    // solveStretchingConstraint(0, 6, diagonal, k);
+    // // 1
+    // solveStretchingConstraint(1, 7, diagonal, k);
+    // // 2
+    // solveStretchingConstraint(2, 4, diagonal, k);
+    // // 3
+    // solveStretchingConstraint(3, 5, diagonal, k);
+
+
     // Compute velocity
-    // std::cout << "Computing velocity" << std::endl;
-        for (int i = 0; i < 8; i++){
-            velocity_vector[i].x = (cu_vertices[i * 3] - cu_vertices_physical[i * 3]) / deltaTime;
-            velocity_vector[i].y = (cu_vertices[i * 3 + 1] - cu_vertices_physical[i * 3 + 1]) / deltaTime;
-            velocity_vector[i].z = (cu_vertices[i * 3 + 2] - cu_vertices_physical[i * 3 + 2]) / deltaTime;
-        }
-            for(int i = 0; i < 8; i++){
-        std::cout << "Position of vertice " << i << ": (" << cu_vertices[i * 3] << ", " << cu_vertices[i * 3 + 1] << ", " << cu_vertices[i * 3 + 2] << ")\n";
-    }
+    for (int i = 0; i < 8; i++){
+        particles[i].velocity = (particles[i].position - particles[i].old_position) / deltaTime;
     }
 
 }
 
 
 void solveStretchingConstraint(int ind1, int ind2, float length, float k){
-    glm::vec3 p0 = glm::vec3(cu_vertices[ind1 * 3], cu_vertices[ind1 * 3 + 1], cu_vertices[ind1 * 3 + 2]);
-    glm::vec3 p1 = glm::vec3(cu_vertices[ind2 * 3], cu_vertices[ind2 * 3 + 1], cu_vertices[ind2 * 3 + 2]);
+    Particle p0 = particles[ind1];
+    Particle p1 = particles[ind2];
     float d = length;
     // The constraint is |p0 - p1| = d
     // We want to find the delta p0 and delta p1 that satisfies the constraint
-    float len = glm::length(p0 - p1);
-    float w0 = inverse_masses[ind1] / (inverse_masses[ind1] + inverse_masses[ind2]);
-    float w1 = inverse_masses[ind2] / (inverse_masses[ind1] + inverse_masses[ind2]);
-    glm::vec3 delta_p0 = -w0 * k *(len - d) * (p0 - p1) / len;
-    glm::vec3 delta_p1 = w1 * k * (len - d) * (p0 - p1) / len;
-    cu_vertices[ind1 * 3] += delta_p0.x;
-    cu_vertices[ind1 * 3 + 1] += delta_p0.y;
-    cu_vertices[ind1 * 3 + 2] += delta_p0.z;
-    cu_vertices[ind2 * 3] += delta_p1.x;
-    cu_vertices[ind2 * 3 + 1] += delta_p1.y;
-    cu_vertices[ind2 * 3 + 2] += delta_p1.z;
+    float len = glm::length(p0.position - p1.position);
+    float w0 = p0.inverse_mass / (p0.inverse_mass + p1.inverse_mass);
+    float w1 = p1.inverse_mass / (p0.inverse_mass + p1.inverse_mass);
+    glm::vec3 delta_p0 = -(w0 * k *(len - d)  / len ) * (p0.position - p1.position);
+    glm::vec3 delta_p1 = (w1 * k *(len - d)  / len ) * (p0.position - p1.position);
+    particles[ind1].position += delta_p0;
+    particles[ind2].position += delta_p1;
 }
