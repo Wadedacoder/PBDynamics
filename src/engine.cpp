@@ -9,7 +9,7 @@ void Engine::solveStretchingConstraint(Particle& p0, Particle& p1, float rest_le
     // The constraint is |p0 - p1| = d
     // We want to find the delta p0 and delta p1 that satisfies the constraint
     float len = glm::length(p0.position - p1.position);
-    if(len == 0) len = 0.0001f;
+    if(len == 0) len = 0.001f;
     float w0 = p0.inverse_mass / (p0.inverse_mass + p1.inverse_mass);
     float w1 = p1.inverse_mass / (p0.inverse_mass + p1.inverse_mass);
     glm::vec3 delta_p0 = -(w0 * k *(len - d)  / len ) * (p0.position - p1.position);

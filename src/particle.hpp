@@ -15,7 +15,8 @@ class Particle{
     float inverse_mass;
 
     Particle(glm::vec3 position, glm::vec3 velocity, float inverse_mass): position(position), old_position(position), velocity(velocity), inverse_mass(inverse_mass){};
-    Particle(glm::vec3 position, glm::vec3 velocity): position(position), velocity(velocity), old_position(position), inverse_mass(0.0f){}; // Default to infinite mass
+    Particle(glm::vec3 position, glm::vec3 velocity): position(position), velocity(velocity), old_position(position), inverse_mass(1.0f){};
+    Particle(glm::vec3 position): position(position), velocity(glm::vec3(0.0f)), old_position(position), inverse_mass(1.0f){};
     Particle(){}
 
     // String Particledebug(){return }
