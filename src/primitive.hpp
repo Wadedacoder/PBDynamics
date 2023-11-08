@@ -13,8 +13,8 @@
 
 struct Triplet{
     // int indices
-    int ind1;
-    int ind2;
+    unsigned int ind1;
+    unsigned int ind2;
     float length;
 
     // Less than operator
@@ -26,7 +26,7 @@ struct Triplet{
 
 class Primitive {
     public:
-    Primitive(std::vector<Particle> particles, std::vector<int> indices): particles(particles), indices(indices){
+    Primitive(std::vector<Particle>& particles, std::vector<unsigned int>& indices): particles(particles), indices(indices){
         init();
     };
 
@@ -45,7 +45,7 @@ class Primitive {
 
 
     private:
-        void setNewPos(int indice, glm::vec3 new_position);
+        void setNewPos(unsigned int indice, glm::vec3 new_position);
         void init();
         void addStretchingConstraint(Triplet t);
 
@@ -56,12 +56,12 @@ class Primitive {
         std::vector<Particle> particles;
 
         std::vector<float> vertices;
-        std::vector<int> indices;
+        std::vector<unsigned int> indices;
 
 
         // Constraints
         std::set<Triplet> stretching_constraints;
-        float stretching_stiffness = 0.5f;
+        float stretching_stiffness = 0.3f;
 
 
 };

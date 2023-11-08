@@ -2,7 +2,7 @@
 
 void Engine::solveStretchingConstraint(Particle& p0, Particle& p1, float rest_length, float stiffness){
     // Calculate the distance between the two particles
-    std::cout << "Particle " << 0 << " position: " << p0.position.x << ", " << p0.position.y << ", " << p0.position.z << std::endl;
+    // std::cout << "Particle " << 0 << " position: " << p0.position.x << ", " << p0.position.y << ", " << p0.position.z << std::endl;
 
     float d = rest_length;
     float k = stiffness;

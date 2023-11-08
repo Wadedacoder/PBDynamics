@@ -3,6 +3,7 @@
 #include "camera.hpp"
 #include "engine.hpp"
 #include "particle.hpp"
+#include "primitive.hpp"
 
 const glm::vec3 clearColor = glm::vec3(0.541f, 0.898f, 1.0f);
 
@@ -31,26 +32,6 @@ glm::mat4 geometricToPhysical{glm::mat4(1.0f)};
 // Callback functions
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-
-// Update function for physics
-void update(float deltaTime);
-
-// struct Particle{
-//     glm::vec3 position;
-//     glm::vec3 old_position;
-//     glm::vec3 velocity;
-//     float inverse_mass;
-// };
-
-
-void particlestoFloats(std::vector<Particle>& particles, std::vector<float>& vertices){
-    vertices.clear();
-    for (int i = 0; i < particles.size(); i++){
-        vertices.push_back(particles[i].position.x);
-        vertices.push_back(particles[i].position.y);
-        vertices.push_back(particles[i].position.z);
-    }
-}
 
 
 std::vector<Particle> particles;
@@ -92,9 +73,6 @@ std::vector<float> inverse_masses = {
 };
 
 
-// void solveStretchingConstraint(int ind1, int ind2, float length, float k);
-
-
 int main(){
 
     // Rotate the cube by 45 degrees
@@ -122,14 +100,6 @@ int main(){
     }
 
 
-
-    // Compute the geometric to physical matrix
-    // Let Bottom Left corner of the screen be (0, 0) and Top Right corner be (1, 1)
-    geometricToPhysical = glm::mat4(1.0f);
-    geometricToPhysical = glm::translate(geometricToPhysical, glm::vec3(1.0f, 1.0f, 1.0f));
-    geometricToPhysical = glm::scale(geometricToPhysical, glm::vec3(.5f, .5f, .5f));
-
-
     GLFWwindow* window = init::setupWindow(height, width);
     ImGuiIO& io = ImGui::GetIO();
 
@@ -144,8 +114,6 @@ int main(){
 
     // Set the screen resizing callback function
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-
-    
 
     // Define the vertices for a Ground Plane
     std::vector<float> g_vertices = {
@@ -183,28 +151,7 @@ int main(){
         6, 7, 3
     };
 
-    // Generate VAO and VBO for the cube
-    unsigned int VAO, VBO, EBO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1,&EBO);
-
-    // Bind the VAO and VBO
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-
-    // Copy the vertices data into the VBO
-    glBufferData(GL_ARRAY_BUFFER, cu_vertices.size() * sizeof(float), cu_vertices.data(), GL_STATIC_DRAW);
-
-    // Bind the EBO
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-
-    // Copy the indices data into the EBO
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
-
-    // Set the vertex attributes pointers
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
+    Primitive Cube = Primitive(particles, indices);
 
     // Generate VAO and VBO for the ground plane
     unsigned int g_VAO, g_VBO, g_EBO;
@@ -256,20 +203,7 @@ int main(){
         deltaTime = currentFrame - last_time;
         last_time = currentFrame;
 
-        // Update physics
-        update(deltaTime);
-        // Print the positions of the particles
-        for (int i = 0; i < 8; i++){
-            std::cout << "Particle " << i << " position: " << particles[i].position.x << ", " << particles[i].position.y << ", " << particles[i].position.z << std::endl;
-        }
-
-        particlestoFloats(particles, cu_vertices); // Convert the particles to floats
-
-        // Update the vertices for the cube
-        glBindVertexArray(VAO);
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, cu_vertices.size() * sizeof(float), cu_vertices.data(), GL_STATIC_DRAW);
-
+        Cube.update(deltaTime, glm::vec3(0.0f, gravity, 0.0f));
       
         // listen for a ctrl event
         if (io.KeyCtrl){
@@ -293,7 +227,6 @@ int main(){
         glClearColor(clearColor.x, clearColor.y, clearColor.z, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glBindVertexArray(VAO);
 
         // Render the cube
         program.use();
@@ -303,7 +236,7 @@ int main(){
         program.setMat4("view", camera.getViewMatrix());
         program.setMat4("projection", camera.getProjectionMatrix(height, width));
         program.setVec4("color", glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
-        glDrawElements(GL_LINE_LOOP, indices.size(), GL_UNSIGNED_INT, 0);
+        Cube.render();
 
         //Make a ground plane with cube
         glBindVertexArray(g_VAO);
@@ -349,159 +282,3 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height){
     height = height;
     glViewport(0, 0, width, height);
 }
-
-// Update function for physics
-void update(float deltaTime){
-    // std::cout << "Updating physics" << std::endl;
-    // Gonna do Position Based Dynamics
-    // https://matthias-research.github.io/pages/publications/posBasedDyn.pdf
-    // https://www.youtube.com/watch?v=7HKoqNJtMTQ
-    // https://www.youtube.com/watch?v=Qupqu1xe7Io
-
-    // For now, just gonna do a simple simulation of a cube falling on a plane
-    // The cube will be a 1x1x1 cube with a mass of 1kg
-    // The plane will be a 10x10 plane with a mass of 0kg
-
-    // Update the velocity of the cube
-    // std::cout << "Updating velocity" << std::endl;
-    float k = .1f;
-    float k2 = .001f;
-    float opposite = sqrt(2.0f);
-    float diagonal = sqrt(3.0f);
-    for (int i = 0; i < 8; i++){
-        if(particles[i].inverse_mass == 0.f) continue;
-        particles[i].velocity += glm::vec3(0.0f, gravity, 0.0f) * deltaTime * inverse_masses[i];
-    }
-    
-    // Update the position of the cube
-    // std::cout << "Updating position" << std::endl;
-    for (int i = 0; i < 8; i++){
-        particles[i].old_position = particles[i].position;
-        particles[i].position += particles[i].velocity * deltaTime;
-    }
-    
-    //Check for ground collision
-    for (int i = 0; i < 8; i++){
-        if(particles[i].position.y <= -1.0f){
-            particles[i].position.y = -1.0f;
-        }
-    }
-            // Add diagonal constraints 
-
-// Solve the stretching constraint between each triangle
-// std::cout << "Solving stretching constraint" << std::endl;
-// Solve the stretching constraint between each adjacent particle
-    // 0
-    // solveStretchingConstraint(0, 1, 1.0f, k);
-    // solveStretchingConstraint(0, 3, 1.0f, k);
-    // solveStretchingConstraint(0, 4, 1.0f, k);
-    // // 1
-    // solveStretchingConstraint(1, 2, 1.0f, k);
-    // solveStretchingConstraint(1, 5, 1.0f, k);
-    // // 2
-    // solveStretchingConstraint(2, 3, 1.0f, k);
-    // solveStretchingConstraint(2, 6, 1.0f, k);
-    // // 3
-    // solveStretchingConstraint(3, 7, 1.0f, k);
-    // // 4
-    // solveStretchingConstraint(4, 5, 1.0f, k);
-    // solveStretchingConstraint(4, 7, 1.0f, k);
-    // // 5
-    // solveStretchingConstraint(5, 6, 1.0f, k);
-    // // 6
-    // solveStretchingConstraint(6, 7, 1.0f, k);
-
-    // // // Do the same for the opposite
-    // // // 0
-    // solveStretchingConstraint(0, 5, opposite, k2);
-    // solveStretchingConstraint(0, 2, opposite, k2);
-    // solveStretchingConstraint(0, 7, opposite, k2);
-    // // 1
-    // solveStretchingConstraint(1, 4, opposite, k2);
-    // solveStretchingConstraint(1, 3, opposite, k2);
-    // solveStretchingConstraint(1, 6, opposite, k2);
-    // // 2
-    // solveStretchingConstraint(2, 5, opposite, k2);
-    // solveStretchingConstraint(2, 7, opposite, k2);
-    // // 3
-    // solveStretchingConstraint(3, 4, opposite, k2);
-    // solveStretchingConstraint(3, 6, opposite, k2);
-    // // 4
-    // solveStretchingConstraint(4, 6, opposite, k2);
-    // // 5
-    // solveStretchingConstraint(5, 7, opposite, k2);
-
-
-    // // Do the same for the diagonal
-    // // 0
-    // solveStretchingConstraint(0, 6, diagonal, k);
-    // // 1
-    // solveStretchingConstraint(1, 7, diagonal, k);
-    // // 2
-    // solveStretchingConstraint(2, 4, diagonal, k);
-    // // 3
-    // solveStretchingConstraint(3, 5, diagonal, k);
-    
-    Engine::solveStretchingConstraint(particles[0], particles[1], 1.0f, k);
-    Engine::solveStretchingConstraint(particles[0], particles[3], 1.0f, k);
-    Engine::solveStretchingConstraint(particles[0], particles[4], 1.0f, k);
-    // 1
-    Engine::solveStretchingConstraint(particles[1], particles[2], 1.0f, k);
-    Engine::solveStretchingConstraint(particles[1], particles[5], 1.0f, k);
-    // 2
-    Engine::solveStretchingConstraint(particles[2], particles[3], 1.0f, k);
-    Engine::solveStretchingConstraint(particles[2], particles[6], 1.0f, k);
-    // 3
-    Engine::solveStretchingConstraint(particles[3], particles[7], 1.0f, k);
-    // 4
-    Engine::solveStretchingConstraint(particles[4], particles[5], 1.0f, k);
-    Engine::solveStretchingConstraint(particles[4], particles[7], 1.0f, k);
-    // 5
-    Engine::solveStretchingConstraint(particles[5], particles[6], 1.0f, k);
-    // 6
-    Engine::solveStretchingConstraint(particles[6], particles[7], 1.0f, k);
-
-    // // Do the same for the opposite
-    // // 0
-    Engine::solveStretchingConstraint(particles[0], particles[5], opposite, k2);
-    Engine::solveStretchingConstraint(particles[0], particles[2], opposite, k2);
-    Engine::solveStretchingConstraint(particles[0], particles[7], opposite, k2);
-    // 1
-    Engine::solveStretchingConstraint(particles[1], particles[4], opposite, k2);
-    Engine::solveStretchingConstraint(particles[1], particles[3], opposite, k2);
-    Engine::solveStretchingConstraint(particles[1], particles[6], opposite, k2);
-    // 2
-    Engine::solveStretchingConstraint(particles[2], particles[5], opposite, k2);
-    Engine::solveStretchingConstraint(particles[2], particles[7], opposite, k2);
-    // 3
-    Engine::solveStretchingConstraint(particles[3], particles[4], opposite, k2);
-    Engine::solveStretchingConstraint(particles[3], particles[6], opposite, k2);
-    // 4
-    Engine::solveStretchingConstraint(particles[4], particles[6], opposite, k2);
-    // 5
-    Engine::solveStretchingConstraint(particles[5], particles[7], opposite, k2);
-
-
-
-    // Compute velocity
-    for (int i = 0; i < 8; i++){
-        particles[i].velocity = (particles[i].position - particles[i].old_position) / deltaTime;
-    }
-
-}
-
-
-// void solveStretchingConstraint(int ind1, int ind2, float length, float k){
-//     Particle p0 = particles[ind1];
-//     Particle p1 = particles[ind2];
-//     float d = length;
-//     // The constraint is |p0 - p1| = d
-//     // We want to find the delta p0 and delta p1 that satisfies the constraint
-//     float len = glm::length(p0.position - p1.position);
-//     float w0 = p0.inverse_mass / (p0.inverse_mass + p1.inverse_mass);
-//     float w1 = p1.inverse_mass / (p0.inverse_mass + p1.inverse_mass);
-//     glm::vec3 delta_p0 = -(w0 * k *(len - d)  / len ) * (p0.position - p1.position);
-//     glm::vec3 delta_p1 = (w1 * k *(len - d)  / len ) * (p0.position - p1.position);
-//     particles[ind1].position += delta_p0;
-//     particles[ind2].position += delta_p1;
-// }

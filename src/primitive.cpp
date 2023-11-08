@@ -103,11 +103,6 @@ void Primitive::postUpdate(float delta_time){
         p.old_position = p.position;
     }
 
-    // Update the VAO
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), &vertices[0], GL_DYNAMIC_DRAW);
-
 }
 
 
@@ -117,17 +112,29 @@ void Primitive::render(){
 
     // Bind the VAO
     glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
+    //Print the vertices
+    // for(int i = 0; i < vertices.size(); i += 3){
+    //     std::cout << "Vertex " << i/3 << " position: " << vertices[i] << ", " << vertices[i+1] << ", " << vertices[i+2] << std::endl;
+    // }
+
+    // Update the vertices
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+    
 
     // Draw the primitive
     glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+    // std::cout << "Drawing " << indices.size() << " indices" << std::endl;
 
 }
 
-void Primitive::setNewPos(int indice, glm::vec3 new_position){
+void Primitive::setNewPos(unsigned int indice, glm::vec3 new_position){
     particles[indice].position = new_position;
     vertices[indice*3] = new_position.x;
     vertices[indice*3 + 1] = new_position.y;
     vertices[indice*3 + 2] = new_position.z;
+    // std::cout << "Vertex " << indice << " position: " << vertices[indice*3] << ", " << vertices[indice*3 + 1] << ", " << vertices[indice*3 + 2] << std::endl;
 }
 
 void Primitive::addStretchingConstraint(Triplet t){
