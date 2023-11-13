@@ -5,6 +5,8 @@
 #include "particle.hpp"
 #include "primitive.hpp"
 
+#include "tiny_obj_loader.h"
+
 const glm::vec3 clearColor = glm::vec3(0.541f, 0.898f, 1.0f);
 
 // Window parameters
@@ -75,31 +77,9 @@ std::vector<float> inverse_masses = {
 
 int main(){
 
-    // Rotate the cube by 45 degrees
-    glm::mat4 rotation = glm::mat4(1.0f);
-    rotation = glm::translate(rotation, glm::vec3(0.0f, 1.f, 0.f));
-    rotation = glm::rotate(rotation, glm::radians(150.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    // Apply the rotation to the vertices
-    for (int i = 0; i < 8; i++){
-        glm::vec4 temp = glm::vec4(cu_vertices[i * 3], cu_vertices[i * 3 + 1], cu_vertices[i * 3 + 2], 1.0f);
-        temp = rotation * temp;
-        cu_vertices[i * 3] = temp.x;
-        cu_vertices[i * 3 + 1] = temp.y;
-        cu_vertices[i * 3 + 2] = temp.z;
-    }
-
-
-    // Convert the vertice, velocity, and inverse_mass vectors to a particle vector
-    for (int i = 0; i < 8; i++){
-        Particle p;
-        p.position = glm::vec3(cu_vertices[i * 3], cu_vertices[i * 3 + 1], cu_vertices[i * 3 + 2]);
-        p.old_position = p.position;
-        p.velocity = velocity_vector[i];
-        p.inverse_mass = inverse_masses[i];
-        particles.push_back(p);
-    }
-
-
+    // Load the obj file
+// Load the obj file : cube.obj
+    
     GLFWwindow* window = init::setupWindow(height, width);
     ImGuiIO& io = ImGui::GetIO();
 
@@ -151,7 +131,66 @@ int main(){
         6, 7, 3
     };
 
+// std::cout << "Loading the obj file" << std::endl;
+//     std::string inputfile = "./models/cube.obj";
+//     tinyobj::attrib_t attrib;
+//     std::vector<tinyobj::shape_t> shapes;
+//     std::string warn;
+//     std::string err;
+//     bool ret = tinyobj::LoadObj(&attrib, &shapes, NULL, &warn, &err, inputfile.c_str());
+//     if (!warn.empty()) {
+//         std::cout << warn << std::endl;
+//     }
+//     if (!err.empty()) {
+//         std::cerr << err << std::endl;
+//     }
+//     if(!ret){
+//         std::cout << "Failed to load the obj file" << std::endl;
+//         return 1;
+//     }
+//     std::cout << "Loaded the obj file" << std::endl;
+
+//     // Get the vertices and indices
+//     std::vector<float> obj_vertices;
+//     std::vector<unsigned int> obj_indices;
+//     for (int j = 0; j < shapes[0].mesh.indices.size(); j++){
+//         obj_indices.push_back(shapes[0].mesh.indices[j].vertex_index);
+//     }
+//     std::cout << "obj_indices.size(): " << obj_indices.size() << std::endl;
+//     for (int i = 0; i < obj_indices.size(); i++){
+//         obj_vertices.push_back(attrib.vertices[3 * obj_indices[i]]);
+//         obj_vertices.push_back(attrib.vertices[3 * obj_indices[i] + 1]);
+//         obj_vertices.push_back(attrib.vertices[3 * obj_indices[i] + 2]);
+//     }
+
+    // Translate the vertices to the +10 y
+    glm::mat4 rotation = glm::mat4(1.0f);
+    rotation = glm::translate(rotation, glm::vec3(0.0f, 1.f, 0.f));
+    rotation = glm::rotate(rotation, glm::radians(150.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    // Apply the rotation to the vertices
+    for (int i = 0; i < 8; i++){
+        glm::vec4 temp = glm::vec4(cu_vertices[i * 3], cu_vertices[i * 3 + 1], cu_vertices[i * 3 + 2], 1.0f);
+        temp = rotation * temp;
+        cu_vertices[i * 3] = temp.x;
+        cu_vertices[i * 3 + 1] = temp.y;
+        cu_vertices[i * 3 + 2] = temp.z;
+    }
+
+    // std::cout << "obj_vertices.size(): " << cu_vertices.size() << std::endl;
+    // Add the vertices to the particles
+    for (int i = 0; i < cu_vertices.size(); i+=3){
+        Particle p;
+        p.position = glm::vec3(cu_vertices[i], cu_vertices[i+1], cu_vertices[i+2]);
+        p.old_position = p.position;
+        p.velocity = velocity_vector[i/3];
+        p.inverse_mass = inverse_masses[i/3];
+        particles.push_back(p);
+    }
+
+    // Make a primitive
     Primitive Cube = Primitive(particles, indices);
+
+    // std::cout << "particles.size(): " << particles.size() << std::endl;
 
     // Generate VAO and VBO for the ground plane
     unsigned int g_VAO, g_VBO, g_EBO;

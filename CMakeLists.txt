@@ -23,6 +23,7 @@ set(SOURCES
 	"depends/imgui/imgui_demo.cpp"
 	"depends/imgui/imgui_draw.cpp"
 	"depends/imgui/imgui_widgets.cpp"
+	# "depends/tiny_obj_loader.cpp"
 	)
 
 add_executable(${TARGET} ${SOURCES})
@@ -30,6 +31,7 @@ add_executable(${TARGET} ${SOURCES})
 target_include_directories(${TARGET} PRIVATE
 	${PROJECT_SOURCE_DIR}/src
 	${PROJECT_SOURCE_DIR}/depends/imgui
+	${PROJECT_SOURCE_DIR}/depends
 	${GLFW_INCLUDE_DIRS}
 	${OPENGL_INCLUDE_DIR}
 	${GLM_INCLUDE_DIRS/../include}

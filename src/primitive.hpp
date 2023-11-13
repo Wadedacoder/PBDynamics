@@ -19,14 +19,21 @@ struct Triplet{
 
     // Less than operator
     bool operator<(const Triplet& t) const{
-        return !((ind1 > t.ind1) || (ind1 == t.ind1 && ind2 > t.ind2));
+        if(ind1 == t.ind1) return ind2 < t.ind2;
+        return ind1 < t.ind1;
     }
 };
 
 
 class Primitive {
     public:
-    Primitive(std::vector<Particle>& particles, std::vector<unsigned int>& indices): particles(particles), indices(indices){
+    Primitive(std::vector<Particle> particles, std::vector<unsigned int> indices) {
+        for(int i = 0; i < particles.size(); i++){
+            this->particles.push_back(particles[i]);
+        }
+        for(int i = 0; i < indices.size(); i++){
+            this->indices.push_back(indices[i]);
+        }
         init();
     };
 
@@ -48,20 +55,20 @@ class Primitive {
         void setNewPos(unsigned int indice, glm::vec3 new_position);
         void init();
         void addStretchingConstraint(Triplet t);
-
-        u_int32_t VAO;
-        u_int32_t VBO;
-        u_int32_t EBO;
         
         std::vector<Particle> particles;
 
         std::vector<float> vertices;
         std::vector<unsigned int> indices;
 
-
         // Constraints
         std::set<Triplet> stretching_constraints;
-        float stretching_stiffness = 0.3f;
+        float stretching_stiffness = .3f;
+
+        // OpenGL
+        u_int32_t VAO;
+        u_int32_t VBO;
+        u_int32_t EBO;
 
 
 };
