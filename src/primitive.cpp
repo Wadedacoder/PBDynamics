@@ -85,40 +85,38 @@ void Primitive::update(float delta_time, glm::vec3 ext_f){
 }
 
 void Primitive::preUpdate(float delta_time, glm::vec3 ext_f){
-    for(int i = 0; i < particles.size(); i++){
-        particles[i].velocity += delta_time * particles[i].inverse_mass * ext_f;
+    for (int i = 0; i < 8; i++){
+        // if(particles[i].inverse_mass == 0.f) continue;
+        particles[i].velocity += ext_f * delta_time * particles[i].inverse_mass;
     }
-
-    // Update the particles
-    for(int i = 0; i < particles.size(); i++){
+    
+    // Update the position of the cube
+    // std::cout << "Updating position" << std::endl;
+    for (int i = 0; i < 8; i++){
         particles[i].old_position = particles[i].position;
-        particles[i].position += delta_time * particles[i].velocity;
+        particles[i].position += particles[i].velocity * delta_time;
+    }
+    
+    //Check for ground collision
+    for (int i = 0; i < 8; i++){
+        if(particles[i].position.y <= -1.0f){
+            particles[i].position.y = -1.0f;
+        }
     }
 }
 
 void Primitive::solve(){
 
-    // Check collision with the ground plane
-    for(int i = 0; i < particles.size(); i++){
-        if(particles[i].position.y < -1.0f){
-            particles[i].position.y = -1.0f;
-        }
-    }
-
-    // Solve all stretching constraints
     for(auto constraint : stretching_constraints){
         // Solve Constraint
         Engine::solveStretchingConstraint(particles[constraint.ind1], particles[constraint.ind2], constraint.length, stretching_stiffness);
-        // Update the vertex array
-        
     }
 }
 
 void Primitive::postUpdate(float delta_time){
     // Recompute velocity
-    for(Particle p : particles){
-        p.velocity = (p.position - p.old_position) / delta_time;
-        // p.old_position = p.position;
+    for (int i = 0; i < 8; i++){
+        particles[i].velocity = (particles[i].position - particles[i].old_position) / delta_time;
     }
 
 }
