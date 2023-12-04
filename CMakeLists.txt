@@ -23,7 +23,7 @@ set(SOURCES
 	"depends/imgui/imgui_demo.cpp"
 	"depends/imgui/imgui_draw.cpp"
 	"depends/imgui/imgui_widgets.cpp"
-	# "depends/tiny_obj_loader.cpp"
+	"depends/tiny_obj_loader.cpp"
 	)
 
 add_executable(${TARGET} ${SOURCES})

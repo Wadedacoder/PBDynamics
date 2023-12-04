@@ -46,7 +46,7 @@ class Primitive {
     void preUpdate(float delta_time, glm::vec3 ext_f); // dt is the time step in seconds; ext_f is the external force
     void solve();  // Solve the constraints
     void postUpdate(float delta_time); // dt is the time step in seconds
-    void update(float delta_time, glm::vec3 ext_f); // Need to put this in engine
+    void update(float delta_time, glm::vec3 ext_f, int substeps); // Need to put this in engine
 
     void render();
 
@@ -63,7 +63,8 @@ class Primitive {
 
         // Constraints
         std::set<Triplet> stretching_constraints;
-        float stretching_stiffness = .3f;
+        float stretching_stiffness = .1f;
+        float initial_stretching_stiffness = .1f;   
 
         // OpenGL
         u_int32_t VAO;

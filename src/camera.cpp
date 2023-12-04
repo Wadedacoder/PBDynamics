@@ -21,7 +21,7 @@ glm::mat4 Camera::getProjectionMatrix(int height, int width){
         return glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
     }
     else{
-        return glm::ortho(0.0f, (float)width, 0.0f, (float)height, 0.1f, 100.0f);
+        return glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.1f, 100.0f);
     }
 }
 
@@ -44,6 +44,11 @@ void Camera::processKeyboardInput(GLFWwindow* window){
     }
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS){
         this->cameraPos += cameraSpeed * this->cameraRight;
+    }
+
+    // Switch between perspective and orthographic projection
+    if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS){
+        this->Perspective = !this->Perspective;
     }
 
     // Camera rotation

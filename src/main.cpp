@@ -53,14 +53,14 @@ std::vector<float> cu_vertices = {
 };
 
 std::vector<glm::vec3> velocity_vector = {
-    glm::vec3(0.0f, .2f, 0.0f), // 0
-    glm::vec3(0.0f, .2f, 0.0f), // 1
-    glm::vec3(0.0f, .2f, 0.0f), // 2
-    glm::vec3(0.0f, .2f, 0.0f), // 3
-    glm::vec3(0.0f, .2f, 0.0f), // 4
-    glm::vec3(0.0f, .2f, 0.0f), // 5
-    glm::vec3(0.0f, .2f, 0.0f), // 6
-    glm::vec3(0.0f, .2f, 0.0f), // 7
+    glm::vec3(0.0f, .0f, 0.0f), // 0
+    glm::vec3(0.0f, .0f, 0.0f), // 1
+    glm::vec3(0.0f, .0f, 0.0f), // 2
+    glm::vec3(0.0f, .0f, 0.0f), // 3
+    glm::vec3(0.0f, .0f, 0.0f), // 4
+    glm::vec3(0.0f, .0f, 0.0f), // 5
+    glm::vec3(0.0f, .0f, 0.0f), // 6
+    glm::vec3(0.0f, .0f, 0.0f), // 7
 };
 
 std::vector<float> inverse_masses = {
@@ -131,37 +131,63 @@ int main(){
         6, 7, 3
     };
 
-// std::cout << "Loading the obj file" << std::endl;
-//     std::string inputfile = "./models/cube.obj";
-//     tinyobj::attrib_t attrib;
-//     std::vector<tinyobj::shape_t> shapes;
-//     std::string warn;
-//     std::string err;
-//     bool ret = tinyobj::LoadObj(&attrib, &shapes, NULL, &warn, &err, inputfile.c_str());
-//     if (!warn.empty()) {
-//         std::cout << warn << std::endl;
-//     }
-//     if (!err.empty()) {
-//         std::cerr << err << std::endl;
-//     }
-//     if(!ret){
-//         std::cout << "Failed to load the obj file" << std::endl;
-//         return 1;
-//     }
-//     std::cout << "Loaded the obj file" << std::endl;
+std::cout << "Loading the obj file" << std::endl;
+    std::string inputfile = "./models/cube.obj";
+    tinyobj::attrib_t attrib;
+    std::vector<tinyobj::shape_t> shapes;
+    std::string warn;
+    std::string err;
+    bool ret = tinyobj::LoadObj(&attrib, &shapes, NULL, &warn, &err, inputfile.c_str());
+    if (!warn.empty()) {
+        std::cout << warn << std::endl;
+    }
+    if (!err.empty()) {
+        std::cerr << err << std::endl;
+    }
+    if(!ret){
+        std::cout << "Failed to load the obj file" << std::endl;
+        return 1;
+    }
+    std::cout << "Loaded the obj file" << std::endl;
 
 //     // Get the vertices and indices
-//     std::vector<float> obj_vertices;
-//     std::vector<unsigned int> obj_indices;
-//     for (int j = 0; j < shapes[0].mesh.indices.size(); j++){
-//         obj_indices.push_back(shapes[0].mesh.indices[j].vertex_index);
-//     }
-//     std::cout << "obj_indices.size(): " << obj_indices.size() << std::endl;
-//     for (int i = 0; i < obj_indices.size(); i++){
-//         obj_vertices.push_back(attrib.vertices[3 * obj_indices[i]]);
-//         obj_vertices.push_back(attrib.vertices[3 * obj_indices[i] + 1]);
-//         obj_vertices.push_back(attrib.vertices[3 * obj_indices[i] + 2]);
-//     }
+    std::vector<float> obj_vertices;
+    std::vector<unsigned int> obj_indices;
+    for (int j = 0; j < shapes[0].mesh.indices.size(); j++){
+        obj_indices.push_back(shapes[0].mesh.indices[j].vertex_index);
+    }
+    std::cout << "obj_indices.size(): " << obj_indices.size() << std::endl;
+    for (int i = 0; i < attrib.vertices.size()/3; i++){
+        obj_vertices.push_back(attrib.vertices[3 * i]);
+        obj_vertices.push_back(attrib.vertices[3 * i + 1]);
+        obj_vertices.push_back(attrib.vertices[3 * i + 2]);
+        // cout << "obj_vertices[" << i << "]: " << obj_vertices[3 * i] << ", " << obj_vertices[3 * i + 1] << ", " << obj_vertices[3 * i + 2] << endl;
+    }
+    glm::mat4 scale_matrix = glm::mat4(1.0f);
+    scale_matrix = glm::scale(scale_matrix, glm::vec3(.5f));
+    scale_matrix = glm::translate(scale_matrix, glm::vec3(0.0f, 1.f, 0.f));
+    for (int i = 0; i < obj_vertices.size(); i+=3){
+        glm::vec4 temp = glm::vec4(obj_vertices[i], obj_vertices[i+1], obj_vertices[i+2], 1.0f);
+        temp = scale_matrix * temp;
+        obj_vertices[i] = temp.x;
+        obj_vertices[i+1] = temp.y;
+        obj_vertices[i+2] = temp.z;
+    }
+    std::cout << "obj_vertices.size(): " << obj_vertices.size() << std::endl;
+
+    // // Create the particles
+    // for (int i = 0; i < obj_vertices.size(); i+=3){
+    //     Particle p;
+    //     p.position = glm::vec3(obj_vertices[i], obj_vertices[i+1], obj_vertices[i+2]);
+    //     //
+    //     p.old_position = p.position;
+    //     p.velocity = glm::vec3(0.0f, 0.f, 0.0f);
+    //     p.inverse_mass = 1.0f;
+    //     particles.push_back(p);
+    // }
+
+    //
+    // Primitive Cube = Primitive(particles, obj_indices);
 
     // Translate the vertices to the +10 y
     glm::mat4 rotation = glm::mat4(1.0f);
@@ -229,10 +255,18 @@ int main(){
     glEnable(GL_MULTISAMPLE);  
     int scale = 1;
     
+    bool start_sim = false;
+
     // Main loop
     while (!glfwWindowShouldClose(window))
     {   
         glfwPollEvents();
+
+        // If the spacebar is pressed, start the simulation
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS){
+            start_sim = true;
+            std::cout << "Spacebar pressed" << std::endl;
+        }
 
         // Process input
         camera.processKeyboardInput(window);
@@ -242,8 +276,15 @@ int main(){
         deltaTime = currentFrame - last_time;
         last_time = currentFrame;
 
-        Cube.update(deltaTime, glm::vec3(0.0f, gravity, 0.0f));
-      
+        // Add substeps
+        if(start_sim){
+            int substeps = 1;
+            float substep_dt = deltaTime / substeps;
+            for (int i = 0; i < substeps; i++){
+                Cube.update(substep_dt, glm::vec3(0.0f, gravity, 0.0f), substeps);
+            }
+            // Cube.update(deltaTime, glm::vec3(0.0f, gravity, 0.0f));
+        }
         // listen for a ctrl event
         if (io.KeyCtrl){
             std::cout << "ctrl pressed" << std::endl;

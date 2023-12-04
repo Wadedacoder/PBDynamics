@@ -8,7 +8,10 @@ void Primitive::init(){
         vertices.push_back(particles[i].position.x);
         vertices.push_back(particles[i].position.y);
         vertices.push_back(particles[i].position.z);
+
+        // std::cout << "Particle " << i << " position: " << particles[i].position.x << ", " << particles[i].position.y << ", " << particles[i].position.z << std::endl;
     }
+
 
     // Initialize the constraints
     std::cout << "Initializing the constraints" << std::endl;
@@ -36,6 +39,16 @@ void Primitive::init(){
         // std::cout << "Adding constraint: " << t3.ind1 << ", " << t3.ind2 << ", " << t3.length << std::endl;
         addStretchingConstraint(t3);
     }
+
+    // Print the constraints
+    // for(auto constraint : stretching_constraints){
+    //     std::cout << "Constraint: " << constraint.ind1 << ", " << constraint.ind2 << ", " << constraint.length << std::endl;
+    // }
+
+    // Print the geometry
+    // for(int i = 0; i < indices.size(); i += 3){
+    //     std::cout << "Triangle " << i/3 << ": " << indices[i] << ", " << indices[i+1] << ", " << indices[i+2] << std::endl;
+    // }
 
 
     // Initialize the VAO, VBO, EBO
@@ -71,7 +84,12 @@ void Primitive::init(){
 
 }
 
-void Primitive::update(float delta_time, glm::vec3 ext_f){
+void Primitive::update(float delta_time, glm::vec3 ext_f, int substeps){
+
+    // Recalculate coefficients
+    // stretching_stiffness = 1 - pow(1 - initial_stretching_stiffness, 1.f/substeps);
+    stretching_stiffness = initial_stretching_stiffness;
+
     //TODO
     preUpdate(delta_time, ext_f);
     solve();
@@ -105,7 +123,7 @@ void Primitive::preUpdate(float delta_time, glm::vec3 ext_f){
     }
 }
 
-void Primitive::solve(){
+void Primitive::solve(){    
 
     for(auto constraint : stretching_constraints){
         // Solve Constraint
@@ -118,6 +136,11 @@ void Primitive::postUpdate(float delta_time){
     for (int i = 0; i < 8; i++){
         particles[i].velocity = (particles[i].position - particles[i].old_position) / delta_time;
     }
+
+    // Print the positions
+    // for(int i = 0; i < particles.size(); i++){
+    //     std::cout << "Particle " << i << " position: " << particles[i].position.x << ", " << particles[i].position.y << ", " << particles[i].position.z << std::endl;
+    // }
 
 }
 
@@ -141,6 +164,7 @@ void Primitive::render(){
     
     // Draw the primitive
     glDrawElements(GL_LINE_LOOP, indices.size(), GL_UNSIGNED_INT, 0);
+    // glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 
 }
 
