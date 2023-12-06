@@ -4,6 +4,7 @@ void Engine::solveStretchingConstraint(Particle& p0, Particle& p1, float rest_le
     // Calculate the distance between the two particles
     // std::cout << "Particle " << 0 << " position: " << p0.position.x << ", " << p0.position.y << ", " << p0.position.z << std::endl;
 
+    if(p0.inverse_mass == 0.f && p1.inverse_mass == 0.f) return; // Both particles are fixed
     float d = rest_length;
     float k = stiffness;
     // The constraint is |p0 - p1| = d

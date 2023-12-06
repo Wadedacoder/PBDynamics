@@ -32,6 +32,12 @@ void Camera::processKeyboardInput(GLFWwindow* window){
     float cameraSpeed = 1.f * deltaTime; // adjust accordingly
     // Camera movement
     // Move along the camera direction
+    if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS){
+       movable = !movable;
+    }
+    if(!movable){
+        return;
+    }
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS){
         this->cameraPos += cameraSpeed * this->cameraDir;
     }
@@ -56,7 +62,10 @@ void Camera::processKeyboardInput(GLFWwindow* window){
 }
 
 void Camera::processMouseInput(GLFWwindow* window, double xpos, double ypos){
-        
+        if(!movable){
+            return;
+        }
+
         xpos *= this->sensitivity;
         ypos *= this->sensitivity;
 

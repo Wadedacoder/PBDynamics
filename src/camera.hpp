@@ -23,6 +23,8 @@ class Camera
         glm::mat4 getProjectionMatrix(int height, int width);
         void processKeyboardInput(GLFWwindow* window);
         void processMouseInput(GLFWwindow* window, double xpos, double ypos);
+
+        
     
     private:
         // Camera View
@@ -41,6 +43,7 @@ class Camera
         float pitch = 0.0f;
         int xpos = 0;
         int ypos = 0;
+        bool movable = true; // Whether the camera is movable or not
 
         void updateCameraDir();
 

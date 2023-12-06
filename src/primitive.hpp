@@ -1,9 +1,11 @@
 #ifndef PRIMITIVE_H
 #define PRIMITIVE_H
 
-#include <glm/glm.hpp>
+#include <iostream>
 #include <vector>
+#include <algorithm>
 #include <set>
+#include <glm/glm.hpp>
 #include "particle.hpp"
 #include "engine.hpp"
 
@@ -27,7 +29,7 @@ struct Triplet{
 
 class Primitive {
     public:
-    Primitive(std::vector<Particle> particles, std::vector<unsigned int> indices) {
+    Primitive(std::vector<Particle>& particles, std::vector<unsigned int>& indices, float stretching_stiffness = .1f, bool haveStretching = true, float bending_stiffness = .1f, bool haveBending = true) : stretching_stiffness(stretching_stiffness), bending_stiffness(bending_stiffness), haveStreching(haveStretching), haveBending(haveBending){
         for(int i = 0; i < particles.size(); i++){
             this->particles.push_back(particles[i]);
         }
@@ -46,15 +48,25 @@ class Primitive {
     void preUpdate(float delta_time, glm::vec3 ext_f); // dt is the time step in seconds; ext_f is the external force
     void solve();  // Solve the constraints
     void postUpdate(float delta_time); // dt is the time step in seconds
-    void update(float delta_time, glm::vec3 ext_f, int substeps); // Need to put this in engine
+    void update(float delta_time, glm::vec3 ext_f); // Need to put this in engine
 
     void render();
+
+    bool haveStreching = false;
+    float stretching_stiffness = .1f;
+
+    bool haveBending = false;
+    float bending_stiffness = .1f;
 
 
     private:
         void setNewPos(unsigned int indice, glm::vec3 new_position);
         void init();
+        void generateStretchingConstraints();
         void addStretchingConstraint(Triplet t);
+        void generateBendingConstraints();
+        // void addBendingConstraint(Triplet t);
+
         
         std::vector<Particle> particles;
 
@@ -63,8 +75,7 @@ class Primitive {
 
         // Constraints
         std::set<Triplet> stretching_constraints;
-        float stretching_stiffness = .1f;
-        float initial_stretching_stiffness = .1f;   
+        std::set<Triplet> bending_constraints;
 
         // OpenGL
         u_int32_t VAO;
