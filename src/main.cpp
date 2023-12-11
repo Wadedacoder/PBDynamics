@@ -8,6 +8,10 @@
 
 #include "tiny_obj_loader.h"
 
+#include <utility>
+
+bool HOLD = false;
+
 const glm::vec3 clearColor = glm::vec3(0.541f, 0.898f, 1.0f);
 
 // Window parameters
@@ -167,6 +171,15 @@ int main(){
 
     // Make the cloth from obj.hpp
     std::vector<Particle> particles_cloth;
+    std::vector<float> cloth_vertices;
+    std::vector<unsigned int> cloth_indices;
+
+    //Make cloth from obj.hpp
+    std::pair<std::vector<float>, std::vector<unsigned int>> cloth = createCloth(.5f, 1.f, 10, 20);
+    cloth_vertices = cloth.first;
+    cloth_indices = cloth.second;
+
+
     for(int i = 0; i < cloth_vertices.size(); i+=3){
         Particle p;
         p.position = glm::vec3(cloth_vertices[i], cloth_vertices[i+1], cloth_vertices[i+2]);
@@ -176,25 +189,40 @@ int main(){
         particles_cloth.push_back(p);
     }
 
-    // Fix the top left and top right corners
-    particles_cloth[0].inverse_mass = 0.0f;
-    particles_cloth[0].velocity = glm::vec3(0.0f, 0.0f, 0.0f);
+
     // particles_cloth[9].inverse_mass = 0.0f;
 
-    // Find the top right corner 
+    // particles_cloth[9].inverse_mass = 0.0f;
+    // particles_cloth[9].velocity = glm::vec3(0.0f, 10.0f, 0.0f);
+
+
+
+    // Find the top right and top left corner 
     int top_right = 0;
+    int top_left = 0;
     for(int i = 0; i < particles_cloth.size(); i++){
         if(particles_cloth[i].position.x > particles_cloth[top_right].position.x){
             top_right = i;
         }
-        if(particles_cloth[i].position.x == particles_cloth[top_right].position.x && particles_cloth[i].position.z > particles_cloth[top_right].position.z){
+        if(particles_cloth[i].position.x == particles_cloth[top_right].position.x && particles_cloth[i].position.y > particles_cloth[top_right].position.y){
             top_right = i;
         }
+        if(particles_cloth[i].position.x < particles_cloth[top_left].position.x){
+            top_left = i;
+        }
+        if(particles_cloth[i].position.x == particles_cloth[top_left].position.x && particles_cloth[i].position.y > particles_cloth[top_left].position.y){
+            top_left = i;
+        }
+
     }
     particles_cloth[top_right].inverse_mass = 0.0f;
     particles_cloth[top_right].velocity = glm::vec3(0.0f, 0.0f, 0.0f);
 
-    Primitive Cloth = Primitive(particles_cloth, cloth_indices, .3f);
+    particles_cloth[top_left].inverse_mass = 0.0f;
+    particles_cloth[top_left].velocity = glm::vec3(0.0f, 0.0f, 0.0f);
+    
+
+    Primitive Cloth = Primitive(particles_cloth, cloth_indices, .5f, true, .5f, true);
 
     // Translate the vertices to the +10 y
     glm::mat4 rotation = glm::mat4(1.0f);
@@ -305,6 +333,11 @@ int main(){
         // glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
         Ground.render();
 
+        // Make a dot at the center of the screen
+        program.setVec4("color", glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+        glPointSize(10.0f);
+        glDrawArrays(GL_POINTS, 0, 1);
+
      
         // Render imgui
         ImGui::Render();
@@ -315,6 +348,11 @@ int main(){
     }
 
     init::cleanup(window);
+
+    // Release cloth vertices and indices
+    cloth_vertices.clear();
+    cloth_indices.clear();
+
     return 0;
 }
 
@@ -326,10 +364,31 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos){
         lastY = ypos;
         firstMouse = false;
     }
+    // std::cout << "xpos: " << xpos << " ypos: " << ypos << std::endl;
     float xoffset = xpos - lastX;
     float yoffset = ypos - lastY; // reversed since y-coordinates go from bottom to top
     lastX = xpos;
     lastY = ypos;
+    if(HOLD){
+        // 
+    }
+    // Check if the left mouse button is pressed
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS){
+        // Send a ray from the camera to the mouse position
+        // std::cout << "Camera direction: (" << ray.x << " " << ray.y << " " << ray.z << ")\n";
+        // Camera origin 
+        std::pair<glm::vec3, glm::vec3> ray_pair = camera.getRayPair(xpos/width, ypos/height);
+        glm::vec3 ray_origin = ray_pair.first;
+        glm::vec3 ray = ray_pair.second;
+
+        std::cout << "Ray origin: (" << ray_origin.x << " " << ray_origin.y << " " << ray_origin.z << ")\n";
+
+        // Check if the ray intersects with the primitive Cloth
+
+
+
+
+    }
     camera.processMouseInput(window, xoffset, yoffset);
 }
 

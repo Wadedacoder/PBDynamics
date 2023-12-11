@@ -2,6 +2,9 @@
 
 void Primitive::init(){
 
+    std::cout << "Number of particles: " << particles.size() << std::endl;
+    std::cout << "Number of indices: " << indices.size() << std::endl;
+
     std::cout << "Initializing the primitive" << std::endl;
     // Initialize the vertices
     for(int i = 0; i < particles.size(); i++){
@@ -21,7 +24,7 @@ void Primitive::init(){
     }
 
     if(haveBending){
-        // generateBendingConstraints();
+        generateBendingConstraints();
         //TODO
     }
     
@@ -34,6 +37,7 @@ void Primitive::init(){
     // for(int i = 0; i < indices.size(); i += 3){
     //     std::cout << "Triangle " << i/3 << ": " << indices[i] << ", " << indices[i+1] << ", " << indices[i+2] << std::endl;
     // }
+
 
 
     // Initialize the VAO, VBO, EBO
@@ -53,8 +57,23 @@ void Primitive::init(){
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 
     std::cout << "Buffering the data" << std::endl;
+
+    //Compute the normals
+    computeNormals();
+
+    // Merge the vertices and normals list
+    std::vector<float> vertices_and_normals;
+    for(int i = 0; i < particles.size(); i++){
+        vertices_and_normals.push_back(particles[i].position.x);
+        vertices_and_normals.push_back(particles[i].position.y);
+        vertices_and_normals.push_back(particles[i].position.z);
+        vertices_and_normals.push_back(particles[i].normal.x);
+        vertices_and_normals.push_back(particles[i].normal.y);
+        vertices_and_normals.push_back(particles[i].normal.z);
+    }
+
     // Set the vertices
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertices_and_normals.size() * sizeof(float), vertices_and_normals.data(), GL_DYNAMIC_DRAW);
 
     // // Set the indices
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(int), indices.data(), GL_DYNAMIC_DRAW);
@@ -62,10 +81,13 @@ void Primitive::init(){
     std::cout << "Done initializing the primitive" << std::endl;
     // Set the vertex attributes pointers
     // Position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    // Normal attribute
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
 
     // Enable the vertex attributes pointers
     glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
 
 }
 
@@ -107,29 +129,29 @@ void Primitive::generateBendingConstraints(){
     Each id match has a triangle neighbor
     to find the triangle and the vertex, use the globalEdgeNum
     */
-    std::vector<Triplet> edge_list;
+    std::vector<std::vector<unsigned int>> edge_list;
     int global_edge_num = 0;
     for(int i = 0; i < indices.size(); i += 3){
         // Make three stretching constraints
         global_edge_num = i;
-        Triplet t1;
-        t1.ind1 = std::min(indices[i], indices[i+1]);
-        t1.ind2 = std::max(indices[i], indices[i+1]);
-        t1.length = 3*global_edge_num;
+        std::vector<unsigned int> t1;
+        t1.push_back(std::min(indices[i], indices[i+1]));
+        t1.push_back(std::max(indices[i], indices[i+1]));
+        t1.push_back(global_edge_num);
         // std::cout << "Adding constraint: " << t1.ind1 << ", " << t1.ind2 << ", " << t1.length << std::endl;
         edge_list.push_back(t1);
 
-        Triplet t2;
-        t2.ind1 = std::min(indices[i+1], indices[i+2]);
-        t2.ind2 = std::max(indices[i+1], indices[i+2]);
-        t2.length = 3*global_edge_num + 1;
+        std::vector<unsigned int> t2;
+        t2.push_back(std::min(indices[i+1], indices[i+2]));
+        t2.push_back(std::max(indices[i+1], indices[i+2]));
+        t2.push_back(global_edge_num + 1);
         // std::cout << "Adding constraint: " << t2.ind1 << ", " << t2.ind2 << ", " << t2.length << std::endl;
         edge_list.push_back(t2);
 
-        Triplet t3;
-        t3.ind1 = std::min(indices[i+2], indices[i]);
-        t3.ind2 = std::max(indices[i+2], indices[i]);
-        t3.length = 3*global_edge_num + 2;
+        std::vector<unsigned int> t3;
+        t3.push_back(std::min(indices[i+2], indices[i]));
+        t3.push_back(std::max(indices[i+2], indices[i]));
+        t3.push_back(global_edge_num + 2);
         // std::cout << "Adding constraint: " << t3.ind1 << ", " << t3.ind2 << ", " << t3.length << std::endl;
         edge_list.push_back(t3);
     }
@@ -138,18 +160,30 @@ void Primitive::generateBendingConstraints(){
     std::sort(edge_list.begin(), edge_list.end());
 
     // Find the triangle neighbors
-    for(int i = 0; i < edge_list.size(); i++){
-        // std::cout << "Edge " << i << ": " << edge_list[i].ind1 << ", " << edge_list[i].ind2 << ", " << edge_list[i].length << std::endl;
-        // if(i == 0) continue;
-        if(edge_list[i].ind1 == edge_list[i-1].ind1 && edge_list[i].ind2 == edge_list[i-1].ind2){
-            // std::cout << "Triangle " << edge_list[i].length/3 << " and " << edge_list[i-1].length/3 << " are neighbors" << std::endl;
+    for(int i = 1; i < edge_list.size(); i++){
+        std::cout << "Edge " << i << ": " << edge_list[i][0] << ", " << edge_list[i][1] << ", " << edge_list[i][2] << std::endl;
+        if(edge_list[i][0] == edge_list[i-1][0] && edge_list[i][1] == edge_list[i-1][1]){
+            // We have a triangle neighbor
+            // Find the triangle and the vertex
+            int triangle1 = edge_list[i][2] / 3;
+            int triangle2 = edge_list[i-1][2] / 3;
+            int vertex1 = edge_list[i][2] % 3;
+            int vertex2 = edge_list[i-1][2] % 3;
+            // std::cout << "Triangle " << triangle1 << " and " << triangle2 << " are neighbors" << std::endl;
+            // std::cout << "Vertex " << vertex1 << " and " << vertex2 << " are neighbors" << std::endl;
+            // Add the bending constraint
+            // Find the two unique vertices not in the edge
+            int v3 = indices[triangle1 + 3 - vertex1 - vertex2];
+            int v4 = indices[triangle2 + 3 - vertex1 - vertex2];
             // Add the bending constraint
             Triplet t;
-            t.ind1 = edge_list[i].length/3;
-            t.ind2 = edge_list[i-1].length/3;
+            t.ind1 = v3;
+            t.ind2 = v4;
             t.length = glm::length(particles[t.ind1].position - particles[t.ind2].position);
-            // std::cout << "Adding constraint: " << t.ind1 << ", " << t.ind2 << ", " << t.length << std::endl;
-            // addBendingConstraint(t);
+
+            addStretchingConstraint(t);
+
+            std::cout << "Adding constraint: " << t.ind1 << ", " << t.ind2 << ", " << t.length << std::endl;
         }
     }
 
@@ -187,7 +221,7 @@ void Primitive::preUpdate(float delta_time, glm::vec3 ext_f){
         if(particles[i].position.y <= -1.0f){
             particles[i].position.y = -1.0f;
         }
-    }
+    }   
 }
 
 void Primitive::solve(){    
@@ -222,17 +256,63 @@ void Primitive::render(){
         vertices[i*3 + 2] = particles[i].position.z;
     }
 
+    // Compute the normals
+    computeNormals();
+
+    // Merge the vertices and normals list
+    std::vector<float> vertices_and_normals;
+    for(int i = 0; i < particles.size(); i++){
+        vertices_and_normals.push_back(particles[i].position.x);
+        vertices_and_normals.push_back(particles[i].position.y);
+        vertices_and_normals.push_back(particles[i].position.z);
+        vertices_and_normals.push_back(particles[i].normal.x);
+        vertices_and_normals.push_back(particles[i].normal.y);
+        vertices_and_normals.push_back(particles[i].normal.z);
+    }
+
+
     // Bind the VAO
     glBindVertexArray(VAO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
     // Update the vertices
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertices_and_normals.size() * sizeof(float), vertices_and_normals.data(), GL_DYNAMIC_DRAW);
     
     // Draw the primitive
     // glDrawElements(GL_LINE_LOOP, indices.size(), GL_UNSIGNED_INT, 0);
     glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 
+}
+
+void Primitive::computeNormals(){
+    // Recompute the normals using https://iquilezles.org/articles/normals/
+
+    // Reset the normals
+    for(int i = 0; i < particles.size(); i++){
+        particles[i].normal = glm::vec3(0.0f);
+    }
+
+    // Sum the face normals
+    for(int i = 0; i < indices.size(); i += 3){
+        glm::vec3 v1 = particles[indices[i]].position;
+        glm::vec3 v2 = particles[indices[i+1]].position;
+        glm::vec3 v3 = particles[indices[i+2]].position;
+        glm::vec3 normal = glm::cross(v2 - v1, v3 - v1);
+        particles[indices[i]].normal += normal;
+        particles[indices[i+1]].normal += normal;
+        particles[indices[i+2]].normal += normal;
+    }
+
+    // Normalize the normals
+    for(int i = 0; i < particles.size(); i++){
+        particles[i].normal = glm::normalize(particles[i].normal);
+    }
+
+    // Print the normals
+    // for(int i = 0; i < particles.size(); i++){
+    //     std::cout << "Particle " << i << " normal: " << particles[i].normal.x << ", " << particles[i].normal.y << ", " << particles[i].normal.z << std::endl;
+    // }
+    
 }
 
 void Primitive::setNewPos(unsigned int indice, glm::vec3 new_position){
@@ -242,6 +322,7 @@ void Primitive::setNewPos(unsigned int indice, glm::vec3 new_position){
     vertices[indice*3 + 2] = new_position.z;
     std::cout << "Vertex " << indice << " position: " << vertices[indice*3] << ", " << vertices[indice*3 + 1] << ", " << vertices[indice*3 + 2] << std::endl;
 }
+
 
 void Primitive::addStretchingConstraint(Triplet t){
     // indice1 > indice2

@@ -12,6 +12,7 @@ class Particle{
     glm::vec3 position;
     glm::vec3 old_position;
     glm::vec3 velocity;
+    glm::vec3 normal;
     float inverse_mass;
 
     Particle(glm::vec3 position, glm::vec3 velocity, float inverse_mass): position(position), old_position(position), velocity(velocity), inverse_mass(inverse_mass){};
@@ -31,12 +32,6 @@ class Particle{
 
 
     private:
-
-
-    // Potentially add more variables here
-
-    // Light variables
-    glm::vec3 normal;
 };
 
 #endif

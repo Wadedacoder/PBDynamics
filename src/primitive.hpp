@@ -67,6 +67,9 @@ class Primitive {
         void generateBendingConstraints();
         // void addBendingConstraint(Triplet t);
 
+        // Lighting
+        void computeNormals();
+
         
         std::vector<Particle> particles;
 
