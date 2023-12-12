@@ -16,5 +16,11 @@ sudo bash ./build.sh -c
 ./PBDynamics
 ``` 
 
+### To run the simulation:
+- Press `space` to start the simulation
+- Press `q` to enable and disable the camera movement
+- Move the camera using `w`, `a`, `s`, `d`
+- Press `ctrl` to exit the simulation
+
 ### TODO:
 - [x] Fix orthographic projection

@@ -161,7 +161,7 @@ void Primitive::generateBendingConstraints(){
 
     // Find the triangle neighbors
     for(int i = 1; i < edge_list.size(); i++){
-        std::cout << "Edge " << i << ": " << edge_list[i][0] << ", " << edge_list[i][1] << ", " << edge_list[i][2] << std::endl;
+        // std::cout << "Edge " << i << ": " << edge_list[i][0] << ", " << edge_list[i][1] << ", " << edge_list[i][2] << std::endl;
         if(edge_list[i][0] == edge_list[i-1][0] && edge_list[i][1] == edge_list[i-1][1]){
             // We have a triangle neighbor
             // Find the triangle and the vertex
@@ -183,7 +183,7 @@ void Primitive::generateBendingConstraints(){
 
             addStretchingConstraint(t);
 
-            std::cout << "Adding constraint: " << t.ind1 << ", " << t.ind2 << ", " << t.length << std::endl;
+            // std::cout << "Adding constraint: " << t.ind1 << ", " << t.ind2 << ", " << t.length << std::endl;
         }
     }
 
