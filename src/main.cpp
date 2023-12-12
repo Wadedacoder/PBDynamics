@@ -226,8 +226,10 @@ int main(){
     
 
     Primitive Cloth = Primitive(particles_cloth, cloth_indices, 1.f, true, 1.f, true);
-    Cloth.ambient = glm::vec4(0.2f, 0.2f, 1.f, 1.0f);
-    Cloth.ambient_strength = 0.4f;
+    Cloth.ambient = glm::vec4(178.f/255.f, 115.f/255.f, 37.f/255.f, 1.0f);
+    Cloth.ambient_strength = 0.539f;
+    Cloth.diffuse = glm::vec4(183.f/255.f, 101.f/255.f, 101.f/255.f, 1.0f);
+    Cloth.diffuse_strength = 0.8f;
     // Scene.push_back(Cloth);
 
     // Translate the vertices to the +10 y
@@ -236,7 +238,7 @@ int main(){
     rotation = glm::rotate(rotation, glm::radians(150.0f), glm::vec3(1.0f, 0.0f, 0.0f));
     // Make a primitive
     // Primitive Cube = Primitive(particles, indices);
-    Primitive Cube = makeCube(glm::mat4(1), 1.0f, 1.0f);
+    Primitive Cube = makeCube(rotation, 1.0f, .01f);
     // Scene.push_back(Cube);
         model = glm::translate(model, glm::vec3(0.0f, -1.f, 0.0f));
         model = glm::scale(model, glm::vec3(10.0f, .01f, 10.f));
@@ -315,6 +317,7 @@ int main(){
                 // Add a slider for substeps
             // ImGui::Begin("Substeps");
             ImGui::SliderInt("Substeps", &substeps, 1, 10);
+            ImGui::SliderFloat("Gravity", &gravity, -10.0f, 10.0f);
             ImGui::End();
         }
    
