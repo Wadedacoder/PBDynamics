@@ -24,7 +24,7 @@ class Camera
         void processKeyboardInput(GLFWwindow* window);
         void processMouseInput(GLFWwindow* window, double xpos, double ypos);
         glm::vec3 getCameraDir();
-        std::pair<glm::vec3, glm::vec3> getRayPair(float xpos, float ypos);
+        glm::vec3 getCameraPos(){return this->cameraPos;};
 
         
     

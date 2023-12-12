@@ -99,20 +99,3 @@ void Camera::updateCameraDir(){
     this->cameraRight = glm::normalize(glm::cross(this->cameraDir, worldUp));
     this->cameraUp = glm::normalize(glm::cross(cameraRight, this->cameraDir));
 }
-
-std::pair<glm::vec3, glm::vec3> Camera::getRayPair(float unit_xpos, float unit_ypos){
-    // Returns the camera position and direction given the pixel coordinates
-    // 0,0 is bottom left
-    // 1,1 is top right
-    // The camera position at (1/2, 1/2) is cameraPos
-    // we can calculate the camera position at (xpos, ypos) using the camera Up and Right vectors
-    // The camera direction is the direction of the camera in the world
-
-    // Calculate the camera position
-    
-    glm::vec3 cameraPos = this->cameraPos + (unit_xpos - 0.5f) * this->cameraRight + (unit_ypos - 0.5f) * this->cameraUp;
-    glm::vec3 cameraDir = this->cameraDir;
-    return std::make_pair(cameraPos, cameraDir);
-
-
-}

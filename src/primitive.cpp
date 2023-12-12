@@ -279,8 +279,10 @@ void Primitive::render(){
     glBufferData(GL_ARRAY_BUFFER, vertices_and_normals.size() * sizeof(float), vertices_and_normals.data(), GL_DYNAMIC_DRAW);
     
     // Draw the primitive
-    // glDrawElements(GL_LINE_LOOP, indices.size(), GL_UNSIGNED_INT, 0);
     glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+
+    // glDrawElements(GL_LINE_LOOP, indices.size(), GL_UNSIGNED_INT, 0);
+
 
 }
 
@@ -323,7 +325,6 @@ void Primitive::setNewPos(unsigned int indice, glm::vec3 new_position){
     std::cout << "Vertex " << indice << " position: " << vertices[indice*3] << ", " << vertices[indice*3 + 1] << ", " << vertices[indice*3 + 2] << std::endl;
 }
 
-
 void Primitive::addStretchingConstraint(Triplet t){
     // indice1 > indice2
     int a = t.ind1;
@@ -335,3 +336,43 @@ void Primitive::addStretchingConstraint(Triplet t){
     }
     stretching_constraints.insert(t);
 }
+
+int Primitive::closestParticle(glm::vec3 ray_origin, glm::vec3 ray_dir){
+    // Check for triangles intersection
+    // Using Ray-Triangle Intersection
+
+    // print the ray
+    std::cout << "Ray origin: " << ray_origin.x << ", " << ray_origin.y << ", " << ray_origin.z << std::endl;
+    std::cout << "Ray direction: " << ray_dir.x << ", " << ray_dir.y << ", " << ray_dir.z << std::endl;
+
+    int closest_indice = -1;
+    float closest_t = 1e10;
+    for(int i = 0; i < indices.size(); i += 3){
+        // Make three stretching constraints
+        glm::vec3 v1 = particles[indices[i]].position;
+        glm::vec3 v2 = particles[indices[i+1]].position;
+        glm::vec3 v3 = particles[indices[i+2]].position;
+        glm::vec3 e1 = v2 - v1;
+        glm::vec3 e2 = v3 - v1;
+        glm::vec3 s = ray_origin - v1;
+        glm::vec3 d = ray_dir;
+        glm::vec3 cross = glm::cross(d, e2);
+        float denominator = glm::dot(-d, cross);
+        if(denominator == 0.f) continue;
+        float t = glm::dot(s, cross) / denominator;
+        glm::vec3 q = glm::cross(s, e1);
+        float gamma = glm::dot(-d, q) / denominator;
+        float beta = glm::dot(s, q) / denominator;
+        std::cout << "t: " << t << ", gamma: " << gamma << ", beta: " << beta << std::endl;
+        if(t < 0.f) continue;
+        if(gamma < 0.f || gamma > 1.f) continue;
+        if(beta < 0.f || beta > 1.f - gamma) continue;
+        if(t < closest_t){
+            closest_t = t;
+            closest_indice = indices[i];
+        }
+    }
+    return closest_indice;
+    
+}
+

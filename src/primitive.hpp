@@ -38,7 +38,7 @@ class Primitive {
         }
         init();
     };
-
+    
     ~Primitive(){
         glDeleteVertexArrays(1, &VAO);
         glDeleteBuffers(1, &VBO);
@@ -49,6 +49,10 @@ class Primitive {
     void solve();  // Solve the constraints
     void postUpdate(float delta_time); // dt is the time step in seconds
     void update(float delta_time, glm::vec3 ext_f); // Need to put this in engine
+    void setNewPos(unsigned int indice, glm::vec3 new_position);
+    void setInverseMass(unsigned int indice, float inverse_mass){
+        this->particles[indice].inverse_mass = std::max({0.f,inverse_mass});} 
+    int closestParticle(glm::vec3 ray_origin, glm::vec3 ray_dir); // Return the indice of the closest particle to the ray
 
     void render();
 
@@ -58,9 +62,17 @@ class Primitive {
     bool haveBending = false;
     float bending_stiffness = .1f;
 
+    // Lighting
+    glm::vec4 ambient = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f);
+    glm::vec4 diffuse = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f);
+    glm::vec4 specular = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    float shininess = 32.0f;
+    float ambient_strength = 0.1f;
+    float diffuse_strength = 0.5f;
+    float specular_strength = 1.0f;
+
 
     private:
-        void setNewPos(unsigned int indice, glm::vec3 new_position);
         void init();
         void generateStretchingConstraints();
         void addStretchingConstraint(Triplet t);

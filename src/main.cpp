@@ -12,6 +12,7 @@
 
 bool HOLD = false;
 
+// const glm::vec3 clearColor = glm::vec3(0.0f, 0.0f, 0.0f);
 const glm::vec3 clearColor = glm::vec3(0.541f, 0.898f, 1.0f);
 
 // Window parameters
@@ -33,13 +34,14 @@ double lastY = height / 2.0f;
 bool firstMouse = true;
 
 // Physics parameters
-float gravity = -.098f;
+float gravity = -.98f;
 float delta_time = 0.0166f; // 60 fps
 glm::mat4 geometricToPhysical{glm::mat4(1.0f)};
 
 // Callback functions
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+std::vector<Primitive> Scene;
 
 
 Primitive makeCube(glm::mat4 inital_trans, float inverse_mass = 1.0f, float stretching_coeff = 1.0f){
@@ -109,8 +111,6 @@ Primitive makeCube(glm::mat4 inital_trans, float inverse_mass = 1.0f, float stre
 
 int main(){
 
-
-    
     GLFWwindow* window = init::setupWindow(height, width);
     ImGuiIO& io = ImGui::GetIO();
 
@@ -171,20 +171,23 @@ int main(){
 
     // Make the cloth from obj.hpp
     std::vector<Particle> particles_cloth;
-    std::vector<float> cloth_vertices;
-    std::vector<unsigned int> cloth_indices;
+    // std::vector<float> cloth_vertices;
+    // std::vector<unsigned int> cloth_indices;
 
     //Make cloth from obj.hpp
-    std::pair<std::vector<float>, std::vector<unsigned int>> cloth = createCloth(.5f, 1.f, 10, 20);
-    cloth_vertices = cloth.first;
-    cloth_indices = cloth.second;
+    // std::pair<std::vector<float>, std::vector<unsigned int>> cloth = createCloth(.5f, 1.f, 10, 20);
+    // cloth_vertices = cloth.first;
+    // cloth_indices = cloth.second;
 
 
     for(int i = 0; i < cloth_vertices.size(); i+=3){
         Particle p;
         p.position = glm::vec3(cloth_vertices[i], cloth_vertices[i+1], cloth_vertices[i+2]);
         p.old_position = p.position;
-        p.velocity = glm::vec3(0.1f, 0.f, 0.0f);
+        p.velocity = glm::vec3(0.0f, 0.f, 0.0f);
+        if(i > cloth_vertices.size()/2){
+            p.velocity = glm::vec3(.1f, 0.f, 1.0f);
+        }
         p.inverse_mass = 1.f;
         particles_cloth.push_back(p);
     }
@@ -222,7 +225,10 @@ int main(){
     particles_cloth[top_left].velocity = glm::vec3(0.0f, 0.0f, 0.0f);
     
 
-    Primitive Cloth = Primitive(particles_cloth, cloth_indices, .5f, true, .5f, true);
+    Primitive Cloth = Primitive(particles_cloth, cloth_indices, 1.f, true, 1.f, true);
+    Cloth.ambient = glm::vec4(0.2f, 0.2f, 1.f, 1.0f);
+    Cloth.ambient_strength = 0.4f;
+    // Scene.push_back(Cloth);
 
     // Translate the vertices to the +10 y
     glm::mat4 rotation = glm::mat4(1.0f);
@@ -230,10 +236,17 @@ int main(){
     rotation = glm::rotate(rotation, glm::radians(150.0f), glm::vec3(1.0f, 0.0f, 0.0f));
     // Make a primitive
     // Primitive Cube = Primitive(particles, indices);
-    Primitive Cube = makeCube(rotation, 1.0f, 1.0f);
+    Primitive Cube = makeCube(glm::mat4(1), 1.0f, 1.0f);
+    // Scene.push_back(Cube);
         model = glm::translate(model, glm::vec3(0.0f, -1.f, 0.0f));
         model = glm::scale(model, glm::vec3(10.0f, .01f, 10.f));
     Primitive Ground = makeCube(model, 0.0f, 0.0f);
+    Ground.ambient = glm::vec4(0.2f, 1.f, 0.2f, 1.0f);
+    Ground.ambient_strength = 0.4f;
+    Ground.diffuse = glm::vec4(0.2f, 1.f, 0.2f, 1.0f);
+    Ground.diffuse_strength = 0.5f;
+
+    Scene.push_back(Ground);
     // std::cout << "particles.size(): " << particles.size() << std::endl;
 
     // Frametime
@@ -252,7 +265,7 @@ int main(){
     bool start_sim = false;
 
     int substeps = 5;
-
+    int index = 0;
     // Main loop
     while (!glfwWindowShouldClose(window))
     {   
@@ -269,13 +282,14 @@ int main(){
 
         // Calculate delta time
         float currentFrame = glfwGetTime();
-        deltaTime = 0.0166;
+        deltaTime = 0.0166; // 1/60
         last_time = currentFrame;
 
         // Add substeps
         if(start_sim){
             float substep_dt = deltaTime / substeps;
             for (int i = 0; i < substeps; i++){
+                // Scene[0].update(substep_dt, glm::vec3(0.0f, gravity, 0.0f));
                 // Cube.update(substep_dt, glm::vec3(0.0f, gravity, 0.0f));
                 // Ground.update(substep_dt, glm::vec3(0.0f, gravity, 0.0f));
                 Cloth.update(substep_dt, glm::vec3(0.0f, gravity, 0.0f));
@@ -304,6 +318,22 @@ int main(){
             ImGui::End();
         }
    
+        // Color for each object in the scene
+        {
+            ImGui::Begin("Color");
+            ImGui::SliderInt("Object", &index, 0, Scene.size()-1);
+            ImGui::ColorEdit4("Ambient", glm::value_ptr(Cloth.ambient));
+            ImGui::ColorEdit4("Diffuse", glm::value_ptr(Cloth.diffuse));
+            ImGui::ColorEdit4("Specular", glm::value_ptr(Cloth.specular));
+            ImGui::SliderFloat("Shininess", &Cloth.shininess, 0.0f, 256.0f);
+            ImGui::SliderFloat("Ambient Strength", &Cloth.ambient_strength, 0.0f, 1.0f);
+            ImGui::SliderFloat("Diffuse Strength", &Cloth.diffuse_strength, 0.0f, 1.0f);
+            ImGui::SliderFloat("Specular Strength", &Cloth.specular_strength, 0.0f, 1.0f);
+            ImGui::End();
+        }
+        
+        // ImGui::End();
+        
 
         
 
@@ -319,7 +349,16 @@ int main(){
         program.setMat4("model", model);
         program.setMat4("view", camera.getViewMatrix());
         program.setMat4("projection", camera.getProjectionMatrix(height, width));
-        program.setVec4("color", glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+        program.setVec4("ambientColor", Cloth.ambient);
+        program.setVec4("diffuseColor", Cloth.diffuse);
+        program.setVec4("specularColor", Cloth.specular);
+        program.setFloat("shininess", Cloth.shininess);
+        program.setFloat("ambientStrength", Cloth.ambient_strength);
+        program.setFloat("diffuseStrength", Cloth.diffuse_strength);
+        program.setFloat("specularStrength", Cloth.specular_strength);
+        program.setVec3("lightPos", glm::vec3(1.0f, 1.0f, 0.0f));
+        program.setVec3("viewPos", camera.getCameraPos());
+        // Scene[0].render();
         // Cube.render();
         Cloth.render();
         // Box.render();
@@ -329,14 +368,23 @@ int main(){
         model = glm::mat4(1.0f);
 
         program.setMat4("model", model);
-        program.setVec4("color", glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+        program.setVec4("ambientColor", Scene[0].ambient);
+        program.setVec4("diffuseColor", Scene[0].diffuse);
+        program.setVec4("specularColor", Scene[0].specular);
+        program.setFloat("shininess", Scene[0].shininess);
+        program.setFloat("ambientStrength", Scene[0].ambient_strength);
+        program.setFloat("diffuseStrength", Scene[0].diffuse_strength);
+        program.setFloat("specularStrength", Scene[0].specular_strength);
+        program.setVec3("lightPos", glm::vec3(1.0f, 1.0f, 0.0f));
+        program.setVec3("viewPos", camera.getCameraPos());
         // glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+        // Scene[1].render();
         Ground.render();
 
         // Make a dot at the center of the screen
-        program.setVec4("color", glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
-        glPointSize(10.0f);
-        glDrawArrays(GL_POINTS, 0, 1);
+        // program.setVec4("color", glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+        // glPointSize(10.0f);
+        // glDrawArrays(GL_POINTS, 0, 1);
 
      
         // Render imgui
@@ -369,26 +417,6 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos){
     float yoffset = ypos - lastY; // reversed since y-coordinates go from bottom to top
     lastX = xpos;
     lastY = ypos;
-    if(HOLD){
-        // 
-    }
-    // Check if the left mouse button is pressed
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS){
-        // Send a ray from the camera to the mouse position
-        // std::cout << "Camera direction: (" << ray.x << " " << ray.y << " " << ray.z << ")\n";
-        // Camera origin 
-        std::pair<glm::vec3, glm::vec3> ray_pair = camera.getRayPair(xpos/width, ypos/height);
-        glm::vec3 ray_origin = ray_pair.first;
-        glm::vec3 ray = ray_pair.second;
-
-        std::cout << "Ray origin: (" << ray_origin.x << " " << ray_origin.y << " " << ray_origin.z << ")\n";
-
-        // Check if the ray intersects with the primitive Cloth
-
-
-
-
-    }
     camera.processMouseInput(window, xoffset, yoffset);
 }
 
