@@ -26,6 +26,14 @@ struct Triplet{
     }
 };
 
+// CPU time spent in each stage, in milliseconds. Accumulates across calls until reset by the caller.
+struct PrimitiveTimings{
+    double integrateMs = 0.0;   // preUpdate + postUpdate (apply forces, predict positions, ground clamp, velocities)
+    double constraintsMs = 0.0; // solve() (one Gauss-Seidel pass over all distance constraints per substep)
+    double normalsMs = 0.0;     // computeNormals() before drawing
+    double uploadMs = 0.0;      // rebuild the interleaved vertex array and glBufferData it to the GPU
+};
+
 
 class Primitive {
     public:
@@ -55,6 +63,12 @@ class Primitive {
     int closestParticle(glm::vec3 ray_origin, glm::vec3 ray_dir); // Return the indice of the closest particle to the ray
 
     void render();
+
+    size_t numParticles() const { return particles.size(); }
+    size_t numTriangles() const { return indices.size() / 3; }
+    size_t numConstraints() const { return stretching_constraints.size(); }
+
+    PrimitiveTimings timings;
 
     bool haveStreching = false;
     float stretching_stiffness = .1f;

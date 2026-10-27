@@ -1,5 +1,14 @@
 #include "primitive.hpp"
 
+#include <chrono>
+
+namespace{
+    using Clock = std::chrono::steady_clock;
+    double elapsedMs(Clock::time_point a, Clock::time_point b){
+        return std::chrono::duration<double, std::milli>(b - a).count();
+    }
+}
+
 void Primitive::init(){
 
     std::cout << "Number of particles: " << particles.size() << std::endl;
@@ -192,9 +201,16 @@ void Primitive::generateBendingConstraints(){
 void Primitive::update(float delta_time, glm::vec3 ext_f){
 
     //TODO
+    auto t0 = Clock::now();
     preUpdate(delta_time, ext_f);
+    auto t1 = Clock::now();
     solve();
+    auto t2 = Clock::now();
     postUpdate(delta_time);
+    auto t3 = Clock::now();
+
+    timings.integrateMs += elapsedMs(t0, t1) + elapsedMs(t2, t3);
+    timings.constraintsMs += elapsedMs(t1, t2);
 
      // Print the positions
     // for(int i = 0; i < particles.size(); i++){
@@ -257,7 +273,9 @@ void Primitive::render(){
     }
 
     // Compute the normals
+    auto t0 = Clock::now();
     computeNormals();
+    auto t1 = Clock::now();
 
     // Merge the vertices and normals list
     std::vector<float> vertices_and_normals;
@@ -277,7 +295,11 @@ void Primitive::render(){
 
     // Update the vertices
     glBufferData(GL_ARRAY_BUFFER, vertices_and_normals.size() * sizeof(float), vertices_and_normals.data(), GL_DYNAMIC_DRAW);
-    
+    auto t2 = Clock::now();
+
+    timings.normalsMs += elapsedMs(t0, t1);
+    timings.uploadMs += elapsedMs(t1, t2);
+
     // Draw the primitive
     glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 
