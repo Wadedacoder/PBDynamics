@@ -38,3 +38,6 @@ target_include_directories(${TARGET} PRIVATE
 	)
 target_link_libraries(${TARGET} ${OPENGL_LIBRARIES} glfw GLEW::GLEW)
 
+
+# glm/gtx headers (used by camera.hpp) require this since GLM 0.9.9
+target_compile_definitions(${TARGET} PRIVATE GLM_ENABLE_EXPERIMENTAL)

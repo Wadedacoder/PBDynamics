@@ -33,3 +33,6 @@ PBDynamics
 *.exe
 *.out
 *.app
+
+/Release
+/Debug

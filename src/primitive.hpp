@@ -93,9 +93,9 @@ class Primitive {
         std::set<Triplet> bending_constraints;
 
         // OpenGL
-        u_int32_t VAO;
-        u_int32_t VBO;
-        u_int32_t EBO;
+        GLuint VAO;
+        GLuint VBO;
+        GLuint EBO;
 
 
 };
